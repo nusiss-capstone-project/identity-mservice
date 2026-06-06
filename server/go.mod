@@ -1,10 +1,10 @@
-module github.com/__TEMPLATE_ORG__/__TEMPLATE_REPO__/server
+module github.com/nusiss-capstone-project/identity-mservice/server
 
-go __GO_VERSION__
+go 1.25.10
 
 require (
-	github.com/__TEMPLATE_ORG__/__TEMPLATE_REPO__/common v0.0.1
 	github.com/gin-gonic/gin v1.12.0
+	github.com/nusiss-capstone-project/identity-mservice/common v0.0.1
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
 	github.com/swaggo/files v1.0.1
@@ -100,6 +100,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/__TEMPLATE_ORG__/__TEMPLATE_REPO__/common => ../common
+replace github.com/nusiss-capstone-project/identity-mservice/common => ../common
 
 replace gopkg.in/yaml.v3 => gopkg.in/yaml.v3 v3.0.1

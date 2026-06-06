@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/__SERVICE_SLUG__/v1/{client}/items": {
+        "/identity-ms/v1/{client}/items": {
             "post": {
                 "description": "Create an item record.",
                 "consumes": [
@@ -108,7 +108,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/__SERVICE_SLUG__/v1/{client}/items/{item_id}": {
+        "/identity-ms/v1/{client}/items/{item_id}": {
             "get": {
                 "description": "Get item information by item ID.",
                 "tags": [

@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-package __PROTO_PACKAGE__;
+package identitypb;
 
-option go_package = "/__PROTO_PACKAGE__;__PROTO_PACKAGE__";
+option go_package = "/identitypb;identitypb";
 
-service __GRPC_SERVICE__ {
+service IdentityService {
   rpc SayHello (HelloRequest) returns (HelloResponse);
 }
 

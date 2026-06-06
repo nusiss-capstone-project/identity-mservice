@@ -10,10 +10,10 @@ http:
 
 log:
   level: debug
-  file_path: ./logs/__TEMPLATE_REPO__.log
+  file_path: ./logs/identity-mservice.log
 
 mysql:
   host: "mysql-container"
   port: "3306"
   userName: "root"
-  dbName: "__DB_NAME__"
+  dbName: "identity_ms_db"

@@ -1,11 +1,11 @@
-# __TEMPLATE_REPO__
+# identity-mservice
 
 Go 微服务（`common` / `client` / `server` 三模块）。
 
 ## 模块路径
 
 ```
-github.com/__TEMPLATE_ORG__/__TEMPLATE_REPO__/{common|client|server}
+github.com/nusiss-capstone-project/identity-mservice/{common|client|server}
 ```
 
 ## 本地开发
@@ -19,13 +19,13 @@ cd server && go run main.go
 
 | 类型 | 地址 |
 |------|------|
-| 健康检查 | `GET /__SERVICE_SLUG__/v1/ping` |
-| Swagger | `/__SERVICE_SLUG__/v1/swagger/index.html` |
-| gRPC | `__GRPC_SERVICE__`（端口 `5001`） |
+| 健康检查 | `GET /identity-ms/v1/ping` |
+| Swagger | `/identity-ms/v1/swagger/index.html` |
+| gRPC | `IdentityService`（端口 `5001`） |
 | HTTP | 端口 `8080` |
 
 ## 配置
 
-- Go：`__GO_VERSION__`
-- MySQL 库名：`__DB_NAME__`
-- Proto：`common/proto/__PROTO_FILE__.proto`（package `__PROTO_PACKAGE__`）
+- Go：`1.25.10`
+- MySQL 库名：`identity_ms_db`
+- Proto：`common/proto/identity.proto`（package `identitypb`）

@@ -19,7 +19,7 @@ definitions:
 info:
   contact: {}
 paths:
-  /__SERVICE_SLUG__/v1/{client}/items:
+  /identity-ms/v1/{client}/items:
     post:
       consumes:
       - application/json
@@ -72,7 +72,7 @@ paths:
       summary: Item Create
       tags:
       - Item
-  /__SERVICE_SLUG__/v1/{client}/items/{item_id}:
+  /identity-ms/v1/{client}/items/{item_id}:
     get:
       description: Get item information by item ID.
       parameters:
