@@ -12,7 +12,6 @@ permissions:
 
 jobs:
   trivy:
-    if: github.repository != 'lianjin/go-mservice-template'
     name: Go & Trivy (server)
     runs-on: ubuntu-latest
     steps:

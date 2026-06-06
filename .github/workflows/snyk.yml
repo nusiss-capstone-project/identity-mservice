@@ -12,7 +12,6 @@ permissions:
 
 jobs:
   snyk:
-    if: github.repository != 'lianjin/go-mservice-template'
     name: Snyk Vulnerability Scan
     runs-on: ubuntu-latest
     permissions:
