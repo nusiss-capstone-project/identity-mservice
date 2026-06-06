@@ -1,0 +1,12 @@
+# server
+# Snyk policy file, provides ability to ignore vulnerabilities.
+version: v1.22.0
+ignore:
+  'SNYK-GOLANG-GOPKGINYAMLV3-2952714':
+    - '*':
+      reason: 'Internal toolchain dependency of Go __GO_VERSION__. Replacing in go.mod does not clear toolchain path.'
+      expires: '2027-01-01T00:00:00.000Z'
+  'SNYK-GOLANG-GOPKGINYAMLV3-2841557':
+    - '*':
+      reason: 'Internal toolchain dependency of Go __GO_VERSION__. Replacing in go.mod does not clear toolchain path.'
+      expires: '2027-01-01T00:00:00.000Z'
