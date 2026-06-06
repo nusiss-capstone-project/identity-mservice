@@ -1,8 +1,12 @@
 package router
 
 import (
+	"time"
+
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
+	"github.com/nusiss-capstone-project/identity-mservice/server/config"
 	_ "github.com/nusiss-capstone-project/identity-mservice/server/docs"
 	"github.com/nusiss-capstone-project/identity-mservice/server/http/api"
 	"github.com/nusiss-capstone-project/identity-mservice/server/http/data"
@@ -21,6 +25,7 @@ func NewRouter() *gin.Engine {
 	r.Use(log.RecoveryMiddleware())
 	r.Use(otelgin.Middleware(data.ServiceName))
 	r.Use(log.HTTPObservabilityMiddleware())
+	r.Use(corsMiddleware())
 
 	basicGroup := r.Group(serviceURIPrefix)
 	{
@@ -35,23 +40,33 @@ func NewRouter() *gin.Engine {
 		})
 	}
 
-	v1 := r.Group(serviceURIPrefix + "/:client")
 	{
-		v1.Use(validateClient())
-		v1.POST("/items", api.CreateItem)
-		v1.GET("/items/:item_id", api.GetItems)
+		basicGroup.POST("/items", api.CreateItem)
+		basicGroup.GET("/items/:item_id", api.GetItems)
 	}
 	return r
 }
 
-func validateClient() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		client := c.Param("client")
-		if client != "merchant" && client != "customer" {
-			c.JSON(400, gin.H{"error": "Invalid client type"})
-			c.Abort()
-			return
-		}
-		c.Next()
+func corsMiddleware() gin.HandlerFunc {
+	return cors.New(cors.Config{
+		AllowOrigins: allowedOrigins(),
+		AllowMethods: []string{
+			"GET", "POST", "PUT", "DELETE", "OPTIONS",
+		},
+		AllowHeaders: []string{
+			"Origin", "Content-Type", "Accept", "Authorization", log.RequestIDHeader,
+		},
+		ExposeHeaders: []string{
+			"Content-Length", log.RequestIDHeader,
+		},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	})
+}
+
+func allowedOrigins() []string {
+	if config.Config == nil || config.Config.SystemConfig == nil {
+		return []string{}
 	}
+	return config.Config.SystemConfig.AllowedOrigins
 }

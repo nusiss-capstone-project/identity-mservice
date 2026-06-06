@@ -11,10 +11,10 @@ var (
 )
 
 type Conf struct {
-	GrpcConfig  *GrpcConfig `mapstructure:"grpc"`
-	LogConfig   *LogConfig  `mapstructure:"log"`
-	HttpConfig  *HttpConfig `mapstructure:"http"`
-	MySQLConfig *MySQL      `mapstructure:"mysql"`
+	GrpcConfig   *GrpcConfig   `mapstructure:"grpc"`
+	LogConfig    *LogConfig    `mapstructure:"log"`
+	HttpConfig   *HttpConfig   `mapstructure:"http"`
+	SystemConfig *SystemConfig `mapstructure:"system"`
 }
 
 type HttpConfig struct {
@@ -34,12 +34,8 @@ type GrpcConfig struct {
 	MaxPoolSize    int    `mapstructure:"max_pool_size"`
 }
 
-type MySQL struct {
-	Host     string `mapstructure:"host"`
-	Port     string `mapstructure:"port"`
-	UserName string `mapstructure:"userName"`
-	Password string `mapstructure:"password"`
-	DBName   string `mapstructure:"dbName"`
+type SystemConfig struct {
+	AllowedOrigins []string `mapstructure:"allowed_origins"`
 }
 
 func Init() {
@@ -56,11 +52,5 @@ func Init() {
 	err = viper.Unmarshal(&Config)
 	if err != nil {
 		panic(err)
-	}
-	mysqlPassword := os.Getenv("MYSQL_PASSWORD")
-	if mysqlPassword != "" {
-		Config.MySQLConfig.Password = mysqlPassword
-	} else {
-		panic("MYSQL_PASSWORD environment variable is not set")
 	}
 }

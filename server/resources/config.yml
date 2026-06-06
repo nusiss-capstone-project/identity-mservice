@@ -12,8 +12,8 @@ log:
   level: debug
   file_path: ./logs/identity-mservice.log
 
-mysql:
-  host: "mysql-container"
-  port: "3306"
-  userName: "root"
-  dbName: "identity_ms_db"
+system:
+  allowed_origins: 
+  - https://campaign-center-admin-web.vercel.app
+  - https://finverse-web.vercel.app
+  - http://localhost:3000

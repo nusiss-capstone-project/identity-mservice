@@ -2,9 +2,8 @@ package repository
 
 import (
 	"database/sql"
-	"fmt"
+	"os"
 
-	"github.com/nusiss-capstone-project/identity-mservice/server/config"
 	"github.com/nusiss-capstone-project/identity-mservice/server/repository/model"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -22,13 +21,10 @@ type TxBeginner interface {
 var _ TxBeginner = (*gorm.DB)(nil) // Compile-time interface check
 
 func Init() {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		config.Config.MySQLConfig.UserName,
-		config.Config.MySQLConfig.Password,
-		config.Config.MySQLConfig.Host,
-		config.Config.MySQLConfig.Port,
-		config.Config.MySQLConfig.DBName,
-	)
+	dsn := os.Getenv("MYSQL_DSN")
+	if dsn == "" {
+		panic("MYSQL_DSN is not set")
+	}
 	DB, err = gorm.Open(mysql.Open(dsn),
 		&gorm.Config{
 			PrepareStmt:            true,
