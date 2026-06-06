@@ -6,6 +6,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
+	"github.com/nusiss-capstone-project/identity-mservice/server/auth"
 	"github.com/nusiss-capstone-project/identity-mservice/server/config"
 	_ "github.com/nusiss-capstone-project/identity-mservice/server/docs"
 	"github.com/nusiss-capstone-project/identity-mservice/server/http/api"
@@ -40,10 +41,12 @@ func NewRouter() *gin.Engine {
 		})
 	}
 
+	web := basicGroup.Group("/web")
+	web.Use(auth.RequireUser())
 	{
-		basicGroup.POST("/items", api.CreateItem)
-		basicGroup.GET("/items/:item_id", api.GetItems)
+		web.GET("/user-profile", api.UserGetProfile)
 	}
+
 	return r
 }
 

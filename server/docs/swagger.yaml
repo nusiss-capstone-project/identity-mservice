@@ -1,4 +1,30 @@
 definitions:
+  api.UserProfileData:
+    properties:
+      email:
+        example: a***e@example.com
+        type: string
+      kycChecked:
+        example: true
+        type: boolean
+      registeredAt:
+        example: "2026-05-16T10:00:00Z"
+        type: string
+      username:
+        example: alice
+        type: string
+    type: object
+  api.UserProfileHTTPResponse:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/api.UserProfileData'
+      message:
+        example: success
+        type: string
+    type: object
   data.BaseResponse:
     properties:
       code:
@@ -7,92 +33,27 @@ definitions:
       err_msg:
         type: string
     type: object
-  data.ItemVO:
-    properties:
-      id:
-        type: integer
-      name:
-        type: string
-    required:
-    - name
-    type: object
 info:
   contact: {}
 paths:
-  /identity-ms/v1/{client}/items:
-    post:
-      consumes:
-      - application/json
-      description: Create an item record.
-      parameters:
-      - description: Item information
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/data.ItemVO'
-      - description: Client identifier
-        enum:
-        - customer
-        - merchant
-        in: path
-        name: client
-        required: true
-        type: string
+  /identity-ms/v1/web/user-profile:
+    get:
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: success
           schema:
-            allOf:
-            - $ref: '#/definitions/data.BaseResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/data.ItemVO'
-              type: object
-        "400":
-          description: Bad Request
+            $ref: '#/definitions/api.UserProfileHTTPResponse'
+        "404":
+          description: user not found
           schema:
-            allOf:
-            - $ref: '#/definitions/data.BaseResponse'
-            - properties:
-                data:
-                  type: string
-              type: object
+            $ref: '#/definitions/data.BaseResponse'
         "500":
-          description: Internal Server Error
+          description: internal error
           schema:
-            allOf:
-            - $ref: '#/definitions/data.BaseResponse'
-            - properties:
-                data:
-                  type: string
-              type: object
-      summary: Item Create
+            $ref: '#/definitions/data.BaseResponse'
+      summary: Get user profile (user)
       tags:
-      - Item
-  /identity-ms/v1/{client}/items/{item_id}:
-    get:
-      description: Get item information by item ID.
-      parameters:
-      - description: Client identifier
-        enum:
-        - customer
-        - merchant
-        in: path
-        name: client
-        required: true
-        type: string
-      - description: Item.ID
-        in: path
-        name: item_id
-        required: true
-        type: integer
-      responses:
-        "200":
-          description: OK
-      summary: Item Query with ID
-      tags:
-      - Item
+      - user-profile
 swagger: "2.0"

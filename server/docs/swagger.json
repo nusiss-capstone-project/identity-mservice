@@ -4,135 +4,76 @@
         "contact": {}
     },
     "paths": {
-        "/identity-ms/v1/{client}/items": {
-            "post": {
-                "description": "Create an item record.",
-                "consumes": [
-                    "application/json"
-                ],
+        "/identity-ms/v1/web/user-profile": {
+            "get": {
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Item"
+                    "user-profile"
                 ],
-                "summary": "Item Create",
-                "parameters": [
-                    {
-                        "description": "Item information",
-                        "name": "user",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/data.ItemVO"
-                        }
-                    },
-                    {
-                        "enum": [
-                            "customer",
-                            "merchant"
-                        ],
-                        "type": "string",
-                        "description": "Client identifier",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
+                "summary": "Get user profile (user)",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "success",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/data.BaseResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/data.ItemVO"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/api.UserProfileHTTPResponse"
                         }
                     },
-                    "400": {
-                        "description": "Bad Request",
+                    "404": {
+                        "description": "user not found",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/data.BaseResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/data.BaseResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "internal error",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/data.BaseResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/data.BaseResponse"
                         }
-                    }
-                }
-            }
-        },
-        "/identity-ms/v1/{client}/items/{item_id}": {
-            "get": {
-                "description": "Get item information by item ID.",
-                "tags": [
-                    "Item"
-                ],
-                "summary": "Item Query with ID",
-                "parameters": [
-                    {
-                        "enum": [
-                            "customer",
-                            "merchant"
-                        ],
-                        "type": "string",
-                        "description": "Client identifier",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Item.ID",
-                        "name": "item_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
                     }
                 }
             }
         }
     },
     "definitions": {
+        "api.UserProfileData": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "a***e@example.com"
+                },
+                "kycChecked": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "registeredAt": {
+                    "type": "string",
+                    "example": "2026-05-16T10:00:00Z"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "alice"
+                }
+            }
+        },
+        "api.UserProfileHTTPResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "$ref": "#/definitions/api.UserProfileData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
         "data.BaseResponse": {
             "type": "object",
             "properties": {
@@ -141,20 +82,6 @@
                 },
                 "data": {},
                 "err_msg": {
-                    "type": "string"
-                }
-            }
-        },
-        "data.ItemVO": {
-            "type": "object",
-            "required": [
-                "name"
-            ],
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
                     "type": "string"
                 }
             }
