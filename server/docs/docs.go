@@ -17,7 +17,7 @@ const docTemplate = `{
     "paths": {
         "/identity-ms/v1/clerk/callback": {
             "post": {
-                "description": "Verifies Svix signature headers and accepts Clerk webhook events (e.g. user.created).",
+                "description": "Verifies Svix signature headers and accepts Clerk webhook events (e.g. email.created).",
                 "consumes": [
                     "application/json"
                 ],

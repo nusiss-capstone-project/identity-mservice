@@ -2,6 +2,11 @@ package model
 
 import "time"
 
+const (
+	RoleAdmin = "admin"
+	RoleUser  = "user"
+)
+
 // UserAuthMapping maps a Clerk identity to an internal user and role.
 type UserAuthMapping struct {
 	ID             int64     `gorm:"column:id;primaryKey;autoIncrement"`

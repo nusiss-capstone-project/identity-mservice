@@ -47,7 +47,7 @@ paths:
       consumes:
       - application/json
       description: Verifies Svix signature headers and accepts Clerk webhook events
-        (e.g. user.created).
+        (e.g. email.created).
       parameters:
       - description: Svix message ID
         in: header

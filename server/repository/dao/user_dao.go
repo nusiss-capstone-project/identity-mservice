@@ -11,8 +11,10 @@ import (
 	"gorm.io/gorm"
 )
 
+//go:generate env PATH=$HOME/go/bin:$PATH mockery --name UserDao --filename UserDao.go --output ./mocks --outpkg mocks
 type UserDao interface {
 	GetByID(ctx context.Context, id int64) (*model.User, error)
+	CreateInTransaction(trx *gorm.DB, user *model.User) error
 }
 
 type UserDaoImpl struct {
@@ -47,4 +49,13 @@ func (dao *UserDaoImpl) GetByID(ctx context.Context, id int64) (*model.User, err
 		return nil, ret.Error
 	}
 	return &user, nil
+}
+
+func (dao *UserDaoImpl) CreateInTransaction(trx *gorm.DB, user *model.User) error {
+	if dao.db == nil {
+		return ErrDatabaseDisabled
+	}
+	ret := trx.Create(user)
+	log.Logger.Infof("User created: %v", ret)
+	return ret.Error
 }

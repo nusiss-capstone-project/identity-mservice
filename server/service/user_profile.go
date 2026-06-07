@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/nusiss-capstone-project/identity-mservice/server/log"
 	"github.com/nusiss-capstone-project/identity-mservice/server/repository/dao"
 	"github.com/nusiss-capstone-project/identity-mservice/server/repository/model"
+	"github.com/nusiss-capstone-project/identity-mservice/server/util"
 )
 
 type UserProfileService interface {
@@ -48,30 +48,8 @@ func (s *UserProfileServiceImpl) GetProfile(ctx context.Context, userID int64, e
 	}
 	return &data.UserProfileVO{
 		Username:     user.Name,
-		Email:        maskEmail(email),
+		Email:        util.MaskEmail(email),
 		KYCChecked:   user.KYCStatus == model.KYCStatusPassed,
 		RegisteredAt: user.CreatedAt.Format(time.RFC3339),
 	}, nil
-}
-
-func maskEmail(email string) string {
-	email = strings.TrimSpace(email)
-	local, domain, ok := strings.Cut(email, "@")
-	if !ok || local == "" || domain == "" {
-		return maskString(email)
-	}
-	return maskString(local) + "@" + domain
-}
-
-func maskString(value string) string {
-	switch len(value) {
-	case 0:
-		return ""
-	case 1:
-		return "*"
-	case 2:
-		return value[:1] + "*"
-	default:
-		return value[:1] + "***" + value[len(value)-1:]
-	}
 }

@@ -1,14 +1,15 @@
 package api
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nusiss-capstone-project/identity-mservice/server/http/data"
+	"github.com/nusiss-capstone-project/identity-mservice/server/service"
 	svix "github.com/svix/svix-webhooks/go"
-
-	"github.com/nusiss-capstone-project/identity-mservice/server/log"
 )
 
 // ClerkCallbackErrorResponse documents HTTP error responses for the Clerk webhook.
@@ -33,7 +34,7 @@ type ClerkCallbackErrorResponse struct {
 func ClerkCallback(c *gin.Context) {
 	secret := os.Getenv("CLERK_WEBHOOK_SECRET")
 
-	// 2. 获取 Svix 签名请求头
+	// 2. obtain Svix signature headers
 	headers := c.Request.Header
 	svixId := headers.Get("svix-id")
 	svixSignature := headers.Get("svix-signature")
@@ -44,7 +45,7 @@ func ClerkCallback(c *gin.Context) {
 		return
 	}
 
-	// 3. 读取请求体
+	// 3. read request body
 	payload, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Read body failed"})
@@ -52,7 +53,7 @@ func ClerkCallback(c *gin.Context) {
 	}
 	defer c.Request.Body.Close()
 
-	// 4. 初始化验证器并验证签名
+	// 4. initialize validator and verify signature
 	wh, err := svix.NewWebhook(secret)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Webhook init failed"})
@@ -65,10 +66,31 @@ func ClerkCallback(c *gin.Context) {
 		return
 	}
 
-	// 5. 签名验证通过，处理 user.created 事件
-	// 提示：可以使用 json.Unmarshal 将 payload 解析为你需要的结构体
-	log.Logger.Infof("收到合法的 Clerk Webhook: %s", string(payload))
+	// 5. signature verified, process user.created event
+	var request data.ClerkCallbackRequest
+	if err := json.Unmarshal(payload, &request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+	if request.Type != "user.created" {
+		c.Status(http.StatusOK)
+		return
+	}
+	if request.Data == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Data is required"})
+		return
+	}
+	if request.Data.ClerkUserID() == "" || request.Data.EmailAddress() == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user data"})
+		return
+	}
 
+	// 6. create user mapping
+	err = service.GetUserMappingService().CreateUser(c.Request.Context(), request.Data)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user mapping"})
+		return
+	}
 	// 返回 200 状态码告知 Clerk 接收成功
 	c.Status(http.StatusOK)
 }
