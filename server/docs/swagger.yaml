@@ -1,4 +1,10 @@
 definitions:
+  api.ClerkCallbackErrorResponse:
+    properties:
+      error:
+        example: Missing svix headers
+        type: string
+    type: object
   api.UserProfileData:
     properties:
       email:
@@ -36,6 +42,50 @@ definitions:
 info:
   contact: {}
 paths:
+  /identity-ms/v1/clerk/callback:
+    post:
+      consumes:
+      - application/json
+      description: Verifies Svix signature headers and accepts Clerk webhook events
+        (e.g. user.created).
+      parameters:
+      - description: Svix message ID
+        in: header
+        name: svix-id
+        required: true
+        type: string
+      - description: Svix HMAC signature
+        in: header
+        name: svix-signature
+        required: true
+        type: string
+      - description: Unix timestamp of the webhook message
+        in: header
+        name: svix-timestamp
+        required: true
+        type: string
+      - description: Raw Clerk webhook event JSON payload
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: webhook accepted
+        "400":
+          description: missing svix headers, invalid body, or invalid signature
+          schema:
+            $ref: '#/definitions/api.ClerkCallbackErrorResponse'
+        "500":
+          description: webhook verification init failed
+          schema:
+            $ref: '#/definitions/api.ClerkCallbackErrorResponse'
+      summary: Clerk webhook callback
+      tags:
+      - clerk-webhook
   /identity-ms/v1/web/user-profile:
     get:
       produces:

@@ -15,6 +15,70 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/identity-ms/v1/clerk/callback": {
+            "post": {
+                "description": "Verifies Svix signature headers and accepts Clerk webhook events (e.g. user.created).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "clerk-webhook"
+                ],
+                "summary": "Clerk webhook callback",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Svix message ID",
+                        "name": "svix-id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Svix HMAC signature",
+                        "name": "svix-signature",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Unix timestamp of the webhook message",
+                        "name": "svix-timestamp",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Raw Clerk webhook event JSON payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "webhook accepted"
+                    },
+                    "400": {
+                        "description": "missing svix headers, invalid body, or invalid signature",
+                        "schema": {
+                            "$ref": "#/definitions/api.ClerkCallbackErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "webhook verification init failed",
+                        "schema": {
+                            "$ref": "#/definitions/api.ClerkCallbackErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/identity-ms/v1/web/user-profile": {
             "get": {
                 "produces": [
@@ -48,6 +112,15 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "api.ClerkCallbackErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "Missing svix headers"
+                }
+            }
+        },
         "api.UserProfileData": {
             "type": "object",
             "properties": {

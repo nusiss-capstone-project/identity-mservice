@@ -8,6 +8,7 @@ require (
 	github.com/nusiss-capstone-project/identity-mservice/common v0.0.1
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
+	github.com/svix/svix-webhooks v1.95.1
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.1
 	github.com/swaggo/swag v1.16.6
