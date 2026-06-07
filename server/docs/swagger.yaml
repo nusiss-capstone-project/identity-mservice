@@ -1,4 +1,36 @@
 definitions:
+  api.ClerkCallbackErrorResponse:
+    properties:
+      error:
+        example: Missing svix headers
+        type: string
+    type: object
+  api.UserProfileData:
+    properties:
+      email:
+        example: a***e@example.com
+        type: string
+      kycChecked:
+        example: true
+        type: boolean
+      registeredAt:
+        example: "2026-05-16T10:00:00Z"
+        type: string
+      username:
+        example: alice
+        type: string
+    type: object
+  api.UserProfileHTTPResponse:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/api.UserProfileData'
+      message:
+        example: success
+        type: string
+    type: object
   data.BaseResponse:
     properties:
       code:
@@ -7,92 +39,71 @@ definitions:
       err_msg:
         type: string
     type: object
-  data.ItemVO:
-    properties:
-      id:
-        type: integer
-      name:
-        type: string
-    required:
-    - name
-    type: object
 info:
   contact: {}
 paths:
-  /identity-ms/v1/{client}/items:
+  /identity-ms/v1/clerk/callback:
     post:
       consumes:
       - application/json
-      description: Create an item record.
+      description: Verifies Svix signature headers and accepts Clerk webhook events
+        (e.g. email.created).
       parameters:
-      - description: Item information
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/data.ItemVO'
-      - description: Client identifier
-        enum:
-        - customer
-        - merchant
-        in: path
-        name: client
+      - description: Svix message ID
+        in: header
+        name: svix-id
         required: true
         type: string
+      - description: Svix HMAC signature
+        in: header
+        name: svix-signature
+        required: true
+        type: string
+      - description: Unix timestamp of the webhook message
+        in: header
+        name: svix-timestamp
+        required: true
+        type: string
+      - description: Raw Clerk webhook event JSON payload
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
       produces:
       - application/json
       responses:
         "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/data.BaseResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/data.ItemVO'
-              type: object
+          description: webhook accepted
         "400":
-          description: Bad Request
+          description: missing svix headers, invalid body, or invalid signature
           schema:
-            allOf:
-            - $ref: '#/definitions/data.BaseResponse'
-            - properties:
-                data:
-                  type: string
-              type: object
+            $ref: '#/definitions/api.ClerkCallbackErrorResponse'
         "500":
-          description: Internal Server Error
+          description: webhook verification init failed
           schema:
-            allOf:
-            - $ref: '#/definitions/data.BaseResponse'
-            - properties:
-                data:
-                  type: string
-              type: object
-      summary: Item Create
+            $ref: '#/definitions/api.ClerkCallbackErrorResponse'
+      summary: Clerk webhook callback
       tags:
-      - Item
-  /identity-ms/v1/{client}/items/{item_id}:
+      - clerk-webhook
+  /identity-ms/v1/web/user-profile:
     get:
-      description: Get item information by item ID.
-      parameters:
-      - description: Client identifier
-        enum:
-        - customer
-        - merchant
-        in: path
-        name: client
-        required: true
-        type: string
-      - description: Item.ID
-        in: path
-        name: item_id
-        required: true
-        type: integer
+      produces:
+      - application/json
       responses:
         "200":
-          description: OK
-      summary: Item Query with ID
+          description: success
+          schema:
+            $ref: '#/definitions/api.UserProfileHTTPResponse'
+        "404":
+          description: user not found
+          schema:
+            $ref: '#/definitions/data.BaseResponse'
+        "500":
+          description: internal error
+          schema:
+            $ref: '#/definitions/data.BaseResponse'
+      summary: Get user profile (user)
       tags:
-      - Item
+      - user-profile
 swagger: "2.0"
