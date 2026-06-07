@@ -40,6 +40,7 @@ func NewRouter() *gin.Engine {
 			})
 		})
 	}
+	basicGroup.POST("/clerk/callback", api.ClerkCallback)
 
 	web := basicGroup.Group("/web")
 	web.Use(auth.RequireUser())
