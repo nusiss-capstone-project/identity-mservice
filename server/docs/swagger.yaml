@@ -1,4 +1,36 @@
 definitions:
+  api.ClerkCallbackErrorResponse:
+    properties:
+      error:
+        example: Missing svix headers
+        type: string
+    type: object
+  api.UserProfileData:
+    properties:
+      email:
+        example: a***e@example.com
+        type: string
+      kycChecked:
+        example: true
+        type: boolean
+      registeredAt:
+        example: "2026-05-16T10:00:00Z"
+        type: string
+      username:
+        example: alice
+        type: string
+    type: object
+  api.UserProfileHTTPResponse:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/api.UserProfileData'
+      message:
+        example: success
+        type: string
+    type: object
   data.BaseResponse:
     properties:
       code:
@@ -7,92 +39,116 @@ definitions:
       err_msg:
         type: string
     type: object
-  data.ItemVO:
-    properties:
-      id:
-        type: integer
-      name:
-        type: string
-    required:
-    - name
-    type: object
 info:
   contact: {}
 paths:
-  /identity-ms/v1/{client}/items:
+  /identity-ms/v1/clerk/callback:
     post:
       consumes:
       - application/json
-      description: Create an item record.
+      description: Verifies Svix signature headers and accepts Clerk webhook events
+        (e.g. user.created).
       parameters:
-      - description: Item information
+      - description: Svix message ID
+        in: header
+        name: svix-id
+        required: true
+        type: string
+      - description: Svix HMAC signature
+        in: header
+        name: svix-signature
+        required: true
+        type: string
+      - description: Unix timestamp of the webhook message
+        in: header
+        name: svix-timestamp
+        required: true
+        type: string
+      - description: Raw Clerk webhook event JSON payload
         in: body
-        name: user
+        name: body
         required: true
         schema:
-          $ref: '#/definitions/data.ItemVO'
-      - description: Client identifier
-        enum:
-        - customer
-        - merchant
-        in: path
-        name: client
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: webhook accepted
+        "400":
+          description: missing svix headers, invalid body, or invalid signature
+          schema:
+            $ref: '#/definitions/api.ClerkCallbackErrorResponse'
+        "500":
+          description: webhook verification init failed
+          schema:
+            $ref: '#/definitions/api.ClerkCallbackErrorResponse'
+      summary: Clerk webhook callback
+      tags:
+      - clerk-webhook
+  /identity-ms/v1/kyc/singpass/callback:
+    get:
+      description: Validates OAuth state and completes KYC for the user who started
+        login.
+      parameters:
+      - description: Singpass code
+        in: query
+        name: code
+        required: true
+        type: string
+      - description: OAuth state
+        in: query
+        name: state
         required: true
         type: string
       produces:
       - application/json
       responses:
         "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/data.BaseResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/data.ItemVO'
-              type: object
+          description: callback accepted
         "400":
-          description: Bad Request
+          description: invalid code or state
           schema:
-            allOf:
-            - $ref: '#/definitions/data.BaseResponse'
-            - properties:
-                data:
-                  type: string
-              type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            allOf:
-            - $ref: '#/definitions/data.BaseResponse'
-            - properties:
-                data:
-                  type: string
-              type: object
-      summary: Item Create
+            $ref: '#/definitions/data.BaseResponse'
+      summary: Singpass callback
       tags:
-      - Item
-  /identity-ms/v1/{client}/items/{item_id}:
+      - singpass
+  /identity-ms/v1/web/kyc/singpass/login:
     get:
-      description: Get item information by item ID.
-      parameters:
-      - description: Client identifier
-        enum:
-        - customer
-        - merchant
-        in: path
-        name: client
-        required: true
-        type: string
-      - description: Item.ID
-        in: path
-        name: item_id
-        required: true
-        type: integer
+      description: Requires authentication. Returns an authorize URL; the client should
+        redirect the browser to it.
+      produces:
+      - application/json
       responses:
         "200":
-          description: OK
-      summary: Item Query with ID
+          description: authorize url
+          schema:
+            $ref: '#/definitions/data.BaseResponse'
+        "401":
+          description: authentication required
+          schema:
+            $ref: '#/definitions/data.BaseResponse'
+      summary: Start Singpass KYC
       tags:
-      - Item
+      - singpass
+  /identity-ms/v1/web/user-profile:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/api.UserProfileHTTPResponse'
+        "404":
+          description: user not found
+          schema:
+            $ref: '#/definitions/data.BaseResponse'
+        "500":
+          description: internal error
+          schema:
+            $ref: '#/definitions/data.BaseResponse'
+      summary: Get user profile (user)
+      tags:
+      - user-profile
 swagger: "2.0"

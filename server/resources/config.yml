@@ -17,3 +17,11 @@ system:
   - https://campaign-center-admin-web.vercel.app
   - https://finverse-web.vercel.app
   - http://localhost:3000
+
+singpass:
+  redirect_uri: "http://localhost:8080/identity-ms/v1/kyc/singpass/callback"
+  scope: "openid name email uinfin mobileno"
+  issuer_url: "https://campaignhub.best/mockpass/singpass/v2"
+  token_url: "https://campaignhub.best/mockpass/singpass/v2/token"
+  user_info_url: "https://campaignhub.best/mockpass/singpass/v2/userinfo"
+  jwks_uri: "https://campaignhub.best/mockpass/singpass/v2/.well-known/keys"

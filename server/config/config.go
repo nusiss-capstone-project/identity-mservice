@@ -11,10 +11,20 @@ var (
 )
 
 type Conf struct {
-	GrpcConfig   *GrpcConfig   `mapstructure:"grpc"`
-	LogConfig    *LogConfig    `mapstructure:"log"`
-	HttpConfig   *HttpConfig   `mapstructure:"http"`
-	SystemConfig *SystemConfig `mapstructure:"system"`
+	GrpcConfig     *GrpcConfig     `mapstructure:"grpc"`
+	LogConfig      *LogConfig      `mapstructure:"log"`
+	HttpConfig     *HttpConfig     `mapstructure:"http"`
+	SystemConfig   *SystemConfig   `mapstructure:"system"`
+	SingpassConfig *SingpassConfig `mapstructure:"singpass"`
+}
+
+type SingpassConfig struct {
+	RedirectURI string `mapstructure:"redirect_uri"`
+	Scope       string `mapstructure:"scope"`
+	IssuerURL   string `mapstructure:"issuer_url"`
+	TokenURL    string `mapstructure:"token_url"`
+	UserInfoURL string `mapstructure:"user_info_url"`
+	JWKSURI     string `mapstructure:"jwks_uri"`
 }
 
 type HttpConfig struct {

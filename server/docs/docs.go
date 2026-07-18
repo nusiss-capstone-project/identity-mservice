@@ -15,9 +15,9 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/identity-ms/v1/{client}/items": {
+        "/identity-ms/v1/clerk/callback": {
             "post": {
-                "description": "Create an item record.",
+                "description": "Verifies Svix signature headers and accepts Clerk webhook events (e.g. user.created).",
                 "consumes": [
                     "application/json"
                 ],
@@ -25,125 +25,204 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Item"
+                    "clerk-webhook"
                 ],
-                "summary": "Item Create",
+                "summary": "Clerk webhook callback",
                 "parameters": [
                     {
-                        "description": "Item information",
-                        "name": "user",
+                        "type": "string",
+                        "description": "Svix message ID",
+                        "name": "svix-id",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Svix HMAC signature",
+                        "name": "svix-signature",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Unix timestamp of the webhook message",
+                        "name": "svix-timestamp",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Raw Clerk webhook event JSON payload",
+                        "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/data.ItemVO"
+                            "type": "object"
                         }
-                    },
-                    {
-                        "enum": [
-                            "customer",
-                            "merchant"
-                        ],
-                        "type": "string",
-                        "description": "Client identifier",
-                        "name": "client",
-                        "in": "path",
-                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/data.BaseResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/data.ItemVO"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
+                        "description": "webhook accepted"
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "missing svix headers, invalid body, or invalid signature",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/data.BaseResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/api.ClerkCallbackErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "webhook verification init failed",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/data.BaseResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/api.ClerkCallbackErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/identity-ms/v1/{client}/items/{item_id}": {
+        "/identity-ms/v1/kyc/singpass/callback": {
             "get": {
-                "description": "Get item information by item ID.",
-                "tags": [
-                    "Item"
+                "description": "Validates OAuth state and completes KYC for the user who started login.",
+                "produces": [
+                    "application/json"
                 ],
-                "summary": "Item Query with ID",
+                "tags": [
+                    "singpass"
+                ],
+                "summary": "Singpass callback",
                 "parameters": [
                     {
-                        "enum": [
-                            "customer",
-                            "merchant"
-                        ],
                         "type": "string",
-                        "description": "Client identifier",
-                        "name": "client",
-                        "in": "path",
+                        "description": "Singpass code",
+                        "name": "code",
+                        "in": "query",
                         "required": true
                     },
                     {
-                        "type": "integer",
-                        "description": "Item.ID",
-                        "name": "item_id",
-                        "in": "path",
+                        "type": "string",
+                        "description": "OAuth state",
+                        "name": "state",
+                        "in": "query",
                         "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "callback accepted"
+                    },
+                    "400": {
+                        "description": "invalid code or state",
+                        "schema": {
+                            "$ref": "#/definitions/data.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/identity-ms/v1/web/kyc/singpass/login": {
+            "get": {
+                "description": "Requires authentication. Returns an authorize URL; the client should redirect the browser to it.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "singpass"
+                ],
+                "summary": "Start Singpass KYC",
+                "responses": {
+                    "200": {
+                        "description": "authorize url",
+                        "schema": {
+                            "$ref": "#/definitions/data.BaseResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/data.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/identity-ms/v1/web/user-profile": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-profile"
+                ],
+                "summary": "Get user profile (user)",
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "$ref": "#/definitions/api.UserProfileHTTPResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "user not found",
+                        "schema": {
+                            "$ref": "#/definitions/data.BaseResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/data.BaseResponse"
+                        }
                     }
                 }
             }
         }
     },
     "definitions": {
+        "api.ClerkCallbackErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "Missing svix headers"
+                }
+            }
+        },
+        "api.UserProfileData": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "a***e@example.com"
+                },
+                "kycChecked": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "registeredAt": {
+                    "type": "string",
+                    "example": "2026-05-16T10:00:00Z"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "alice"
+                }
+            }
+        },
+        "api.UserProfileHTTPResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "$ref": "#/definitions/api.UserProfileData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
         "data.BaseResponse": {
             "type": "object",
             "properties": {
@@ -152,20 +231,6 @@ const docTemplate = `{
                 },
                 "data": {},
                 "err_msg": {
-                    "type": "string"
-                }
-            }
-        },
-        "data.ItemVO": {
-            "type": "object",
-            "required": [
-                "name"
-            ],
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
                     "type": "string"
                 }
             }
