@@ -47,7 +47,7 @@ paths:
       consumes:
       - application/json
       description: Verifies Svix signature headers and accepts Clerk webhook events
-        (e.g. email.created).
+        (e.g. user.created).
       parameters:
       - description: Svix message ID
         in: header
@@ -86,6 +86,29 @@ paths:
       summary: Clerk webhook callback
       tags:
       - clerk-webhook
+  /identity-ms/v1/kyc/singpass/callback:
+    get:
+      consumes:
+      - application/json
+      description: Handles Singpass callback.
+      parameters:
+      - description: Singpass code
+        in: query
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: callback accepted
+        "400":
+          description: invalid code
+          schema:
+            $ref: '#/definitions/data.BaseResponse'
+      summary: Singpass callback
+      tags:
+      - singpass
   /identity-ms/v1/web/user-profile:
     get:
       produces:

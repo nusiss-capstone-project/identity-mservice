@@ -17,7 +17,7 @@ const docTemplate = `{
     "paths": {
         "/identity-ms/v1/clerk/callback": {
             "post": {
-                "description": "Verifies Svix signature headers and accepts Clerk webhook events (e.g. email.created).",
+                "description": "Verifies Svix signature headers and accepts Clerk webhook events (e.g. user.created).",
                 "consumes": [
                     "application/json"
                 ],
@@ -74,6 +74,41 @@ const docTemplate = `{
                         "description": "webhook verification init failed",
                         "schema": {
                             "$ref": "#/definitions/api.ClerkCallbackErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/identity-ms/v1/kyc/singpass/callback": {
+            "get": {
+                "description": "Handles Singpass callback.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "singpass"
+                ],
+                "summary": "Singpass callback",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Singpass code",
+                        "name": "code",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "callback accepted"
+                    },
+                    "400": {
+                        "description": "invalid code",
+                        "schema": {
+                            "$ref": "#/definitions/data.BaseResponse"
                         }
                     }
                 }

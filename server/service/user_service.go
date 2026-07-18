@@ -64,6 +64,7 @@ func (s *userServiceImpl) CreateUser(ctx context.Context, clerkCallbackData *dat
 
 	existing, err := s.userAuthMappingDao.GetByClerkUserID(ctx, clerkUserID)
 	if err != nil {
+		log.WithContext(ctx).Errorf("Failed to get user mapping by clerk user ID: %s, error: %v", clerkUserID, err)
 		return err
 	}
 	if existing != nil {

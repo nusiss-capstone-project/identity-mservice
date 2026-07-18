@@ -15,6 +15,7 @@ import (
 type UserDao interface {
 	GetByID(ctx context.Context, id int64) (*model.User, error)
 	CreateInTransaction(trx *gorm.DB, user *model.User) error
+	UpdateKYCStatus(ctx context.Context, id int64, status string) error
 }
 
 type UserDaoImpl struct {
@@ -57,5 +58,14 @@ func (dao *UserDaoImpl) CreateInTransaction(trx *gorm.DB, user *model.User) erro
 	}
 	ret := trx.Create(user)
 	log.Logger.Infof("User created: %v", ret)
+	return ret.Error
+}
+
+func (dao *UserDaoImpl) UpdateKYCStatus(ctx context.Context, id int64, status string) error {
+	if dao.db == nil {
+		return ErrDatabaseDisabled
+	}
+	ret := dao.db.WithContext(ctx).Model(&model.User{}).Where("id = ?", id).Update("kyc_status", status)
+	log.Logger.Infof("KYC status updated: %v", ret)
 	return ret.Error
 }
