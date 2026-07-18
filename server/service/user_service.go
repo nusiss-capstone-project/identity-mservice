@@ -2,8 +2,9 @@ package service
 
 import (
 	"context"
-	"math/rand"
-	"strconv"
+	"crypto/rand"
+	"fmt"
+	"math/big"
 	"sync"
 	"time"
 
@@ -68,12 +69,13 @@ func (s *userServiceImpl) CreateUser(ctx context.Context, clerkCallbackData *dat
 		return err
 	}
 	if existing != nil {
-		log.Logger.Infof("User mapping already exists for clerk user: %s", clerkUserID)
+		log.WithContext(ctx).Infof("User mapping already exists for clerk user: %s", clerkUserID)
 		return nil
 	}
 
 	userMapping, err := s.userAuthMappingDao.GetByEmail(ctx, email)
 	if err != nil {
+		log.WithContext(ctx).Errorf("Failed to get user mapping by email: %s, error: %v", email, err)
 		return err
 	}
 	if userMapping != nil {
@@ -101,5 +103,9 @@ func (s *userServiceImpl) CreateUser(ctx context.Context, clerkCallbackData *dat
 }
 
 func randomGenName() string {
-	return "User" + strconv.Itoa(rand.Intn(1000000))
+	n, err := rand.Int(rand.Reader, big.NewInt(1_000_000))
+	if err != nil {
+		return fmt.Sprintf("User%d", time.Now().UnixNano()%1_000_000)
+	}
+	return fmt.Sprintf("User%06d", n.Int64())
 }

@@ -2,15 +2,19 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/nusiss-capstone-project/identity-mservice/server/http/data"
+	"github.com/nusiss-capstone-project/identity-mservice/server/log"
 	"github.com/nusiss-capstone-project/identity-mservice/server/service"
 	svix "github.com/svix/svix-webhooks/go"
 )
+
+const maxClerkWebhookBody = 1 << 20 // 1 MiB
 
 // ClerkCallbackErrorResponse documents HTTP error responses for the Clerk webhook.
 type ClerkCallbackErrorResponse struct {
@@ -32,6 +36,8 @@ type ClerkCallbackErrorResponse struct {
 // @Failure 500 {object} ClerkCallbackErrorResponse "webhook verification init failed"
 // @Router /identity-ms/v1/clerk/callback [post]
 func ClerkCallback(c *gin.Context) {
+	log.WithContext(c.Request.Context()).Infow("clerk callback received")
+
 	secret := os.Getenv("CLERK_WEBHOOK_SECRET")
 
 	// 2. obtain Svix signature headers
@@ -45,13 +51,23 @@ func ClerkCallback(c *gin.Context) {
 		return
 	}
 
-	// 3. read request body
+	// 3. read request body (capped to avoid memory exhaustion before signature verification)
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxClerkWebhookBody)
 	payload, err := io.ReadAll(c.Request.Body)
 	if err != nil {
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "Request body too large"})
+			return
+		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Read body failed"})
 		return
 	}
-	defer c.Request.Body.Close()
+	defer func() {
+		if err := c.Request.Body.Close(); err != nil {
+			log.WithContext(c.Request.Context()).Errorf("Failed to close request body: %v", err)
+		}
+	}()
 
 	// 4. initialize validator and verify signature
 	wh, err := svix.NewWebhook(secret)

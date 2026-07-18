@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nusiss-capstone-project/identity-mservice/server/log"
 	"github.com/nusiss-capstone-project/identity-mservice/server/proxy"
 	"github.com/nusiss-capstone-project/identity-mservice/server/service"
 )
@@ -39,6 +40,8 @@ func SingpassLogin(c *gin.Context) {
 // @Failure 400 {object} data.BaseResponse "invalid code"
 // @Router /identity-ms/v1/kyc/singpass/callback [get]
 func SingpassCallback(c *gin.Context) {
+	log.WithContext(c.Request.Context()).Infow("singpass callback received")
+
 	code := c.Query("code")
 	if code == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid code"})
