@@ -19,12 +19,13 @@ type Conf struct {
 }
 
 type SingpassConfig struct {
-	RedirectURI string `mapstructure:"redirect_uri"`
-	Scope       string `mapstructure:"scope"`
-	IssuerURL   string `mapstructure:"issuer_url"`
-	TokenURL    string `mapstructure:"token_url"`
-	UserInfoURL string `mapstructure:"user_info_url"`
-	JWKSURI     string `mapstructure:"jwks_uri"`
+	RedirectURI   string `mapstructure:"redirect_uri"`
+	Scope         string `mapstructure:"scope"`
+	IssuerURL     string `mapstructure:"issuer_url"`     // browser authorize base (public)
+	AssertionAud  string `mapstructure:"assertion_aud"`  // client_assertion aud; optional
+	TokenURL      string `mapstructure:"token_url"`
+	UserInfoURL   string `mapstructure:"user_info_url"`
+	JWKSURI       string `mapstructure:"jwks_uri"`
 }
 
 type HttpConfig struct {
