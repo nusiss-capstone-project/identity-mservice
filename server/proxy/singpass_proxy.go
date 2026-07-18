@@ -154,7 +154,11 @@ func (p *singpassProxyImpl) GetAccessToken(ctx context.Context, code string) (st
 		log.Logger.Errorw("singpass: failed to get access token", "error", err)
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Logger.Errorw("singpass: failed to close access token response body", "error", err)
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		logHTTPError("singpass: failed to get access token", resp)
 		return "", errors.New("failed to get access token")
@@ -187,7 +191,11 @@ func (p *singpassProxyImpl) GetUserInfo(ctx context.Context, token string) (*Use
 		log.Logger.Errorw("singpass: failed to get user info", "error", err)
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Logger.Errorw("singpass: failed to close user info response body", "error", err)
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

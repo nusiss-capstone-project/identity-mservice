@@ -37,7 +37,11 @@ func fetchJWKSRaw(client *http.Client, jwksURI string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("fetch jwks: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Logger.Errorw("singpass: failed to close jwks response body", "error", err)
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

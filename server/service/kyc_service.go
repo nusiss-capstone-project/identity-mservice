@@ -56,9 +56,13 @@ var (
 )
 
 func GetKYCService() KYCService {
-	return &kycServiceImpl{
-		singpassProxy:  proxy.GetSingpassProxy(),
-		userDao:        dao.GetUserDao(),
-		userMappingDao: dao.GetUserAuthMappingDao(),
-	}
+	kycServiceSyncOnce.Do(func() {
+		kycServiceInstance = &kycServiceImpl{
+			singpassProxy:  proxy.GetSingpassProxy(),
+			userDao:        dao.GetUserDao(),
+			userMappingDao: dao.GetUserAuthMappingDao(),
+		}
+	})
+	return kycServiceInstance
+
 }
