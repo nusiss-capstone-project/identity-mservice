@@ -32,7 +32,7 @@ type userServiceImpl struct {
 	tx                 repository.TxBeginner
 }
 
-func NewUserMappingService(
+func newUserMappingService(
 	userAuthMappingDao dao.UserAuthMappingDao,
 	userDao dao.UserDao,
 	tx repository.TxBeginner,
@@ -46,7 +46,7 @@ func NewUserMappingService(
 
 func GetUserMappingService() UserMappingService {
 	userMappingServiceOnce.Do(func() {
-		userMappingServiceInst = NewUserMappingService(
+		userMappingServiceInst = newUserMappingService(
 			dao.GetUserAuthMappingDao(),
 			dao.GetUserDao(),
 			repository.DB,

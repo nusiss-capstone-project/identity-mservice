@@ -65,6 +65,24 @@ func (_m *UserDao) GetByID(ctx context.Context, id int64) (*model.User, error) {
 	return r0, r1
 }
 
+// UpdateKYCStatus provides a mock function with given fields: ctx, id, status
+func (_m *UserDao) UpdateKYCStatus(ctx context.Context, id int64, status string) error {
+	ret := _m.Called(ctx, id, status)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateKYCStatus")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, int64, string) error); ok {
+		r0 = rf(ctx, id, status)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // NewUserDao creates a new instance of UserDao. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewUserDao(t interface {

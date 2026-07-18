@@ -48,7 +48,7 @@ func TestUserMappingService_CreateUser_createsMapping(t *testing.T) {
 			m.Role == model.RoleUser
 	})).Return(nil)
 
-	svc := NewUserMappingService(mappings, users, fakeTxBeginner{})
+	svc := newUserMappingService(mappings, users, fakeTxBeginner{})
 	err := svc.CreateUser(context.Background(), clerkUserData())
 
 	require.NoError(t, err)
@@ -63,7 +63,7 @@ func TestUserMappingService_CreateUser_skipsWhenClerkUserExists(t *testing.T) {
 		ClerkUserID: "user_abc",
 	}, nil)
 
-	svc := NewUserMappingService(mappings, users, fakeTxBeginner{})
+	svc := newUserMappingService(mappings, users, fakeTxBeginner{})
 	err := svc.CreateUser(context.Background(), clerkUserData())
 
 	require.NoError(t, err)
@@ -79,7 +79,7 @@ func TestUserMappingService_CreateUser_skipsWhenEmailExists(t *testing.T) {
 		Email: "alice@example.com",
 	}, nil)
 
-	svc := NewUserMappingService(mappings, users, fakeTxBeginner{})
+	svc := newUserMappingService(mappings, users, fakeTxBeginner{})
 	err := svc.CreateUser(context.Background(), clerkUserData())
 
 	require.NoError(t, err)
@@ -92,7 +92,7 @@ func TestUserMappingService_CreateUser_propagatesLookupError(t *testing.T) {
 	mappings := new(mocks.UserAuthMappingDao)
 	mappings.On("GetByClerkUserID", mock.Anything, "user_abc").Return(nil, errors.New("db down"))
 
-	svc := NewUserMappingService(mappings, users, fakeTxBeginner{})
+	svc := newUserMappingService(mappings, users, fakeTxBeginner{})
 	err := svc.CreateUser(context.Background(), clerkUserData())
 
 	require.Error(t, err)
@@ -106,7 +106,7 @@ func TestUserMappingService_CreateUser_propagatesCreateError(t *testing.T) {
 	users.On("CreateInTransaction", mock.Anything, mock.AnythingOfType("*model.User")).
 		Return(errors.New("insert failed"))
 
-	svc := NewUserMappingService(mappings, users, fakeTxBeginner{})
+	svc := newUserMappingService(mappings, users, fakeTxBeginner{})
 	err := svc.CreateUser(context.Background(), clerkUserData())
 
 	require.Error(t, err)
