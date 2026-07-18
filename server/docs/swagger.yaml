@@ -88,13 +88,17 @@ paths:
       - clerk-webhook
   /identity-ms/v1/kyc/singpass/callback:
     get:
-      consumes:
-      - application/json
-      description: Handles Singpass callback.
+      description: Validates OAuth state and completes KYC for the user who started
+        login.
       parameters:
       - description: Singpass code
         in: query
         name: code
+        required: true
+        type: string
+      - description: OAuth state
+        in: query
+        name: state
         required: true
         type: string
       produces:
@@ -103,10 +107,28 @@ paths:
         "200":
           description: callback accepted
         "400":
-          description: invalid code
+          description: invalid code or state
           schema:
             $ref: '#/definitions/data.BaseResponse'
       summary: Singpass callback
+      tags:
+      - singpass
+  /identity-ms/v1/web/kyc/singpass/login:
+    get:
+      description: Requires authentication. Returns an authorize URL; the client should
+        redirect the browser to it.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: authorize url
+          schema:
+            $ref: '#/definitions/data.BaseResponse'
+        "401":
+          description: authentication required
+          schema:
+            $ref: '#/definitions/data.BaseResponse'
+      summary: Start Singpass KYC
       tags:
       - singpass
   /identity-ms/v1/web/user-profile:

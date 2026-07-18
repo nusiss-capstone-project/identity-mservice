@@ -21,34 +21,6 @@ import (
 
 const clientAssertionType = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
 
-// mockpassDefaultClientJWKS is the MockPass default RP private keyset
-// (static/certs/oidc-v2-rp-secret.json). Used only when SINGPASS_CLIENT_JWKS /
-// SINGPASS_CLIENT_JWKS_URI are unset, so local MockPass still works without a file.
-const mockpassDefaultClientJWKS = `{
-  "keys": [
-    {
-      "kty": "EC",
-      "d": "AFOzlND2sq43ykty-VZXw-IEIOyHkBsNXUU77o5yEYcktpoMe9Dl3jsaXwzRK6wtDJH_uoz4IG1Uj4J_WyH5O3GS",
-      "use": "sig",
-      "crv": "P-521",
-      "kid": "sig-2022-06-04T09:22:28Z",
-      "x": "AAj_CAKL9NmP6agPCMto6_LiYQqko3o3ZWTtBg75bA__Z8yKEv_CwHzaibkVLnJ9XKWxCQeyEk9ROLhJoJuZxnsI",
-      "y": "AZeoe0v-EwqD3oo1V5lxUAmC80qHt-ybqOsl1mYKPgE_ctGcD4hj8tVhmD0Of6ARuKVTxNWej-X82hEW_7Aa-XpR",
-      "alg": "ES512"
-    },
-    {
-      "kty": "EC",
-      "d": "AP7xECOnlKW-FuLpe1h3ULZoqFzScFrbyAEQTFFG49j5HRHl0k13-6_6nWnwJ9Y8sTrGOWH4GszmDBBZGGvESJQr",
-      "use": "enc",
-      "crv": "P-521",
-      "kid": "enc-2022-06-04T13:46:15Z",
-      "x": "AB-16HyJwnlSZbQtqhFskADqFrm6rgX9XeaV8FgynX61750GCRbYjoueDosSNt-qzK5QNHskdQw0QZ700YF2JIlb",
-      "y": "AZwYlSBSdV-CxGRMz6ovTvWxKJ6e44gaZHf-YfbJV7w9VdAJb3OuzbHNGRuzNDjEa8eH-paLDaAB84ezrEm1SRHq",
-      "alg": "ECDH-ES+A256KW"
-    }
-  ]
-}`
-
 type singpassSigningKey struct {
 	privateKey *ecdsa.PrivateKey
 	kid        string
@@ -71,7 +43,7 @@ type jwkPrivateKey struct {
 }
 
 // loadClientKeys loads RP private keys for client_assertion signing and userinfo decryption.
-// Priority: SINGPASS_CLIENT_JWKS_URI > SINGPASS_CLIENT_JWKS > MockPass default keyset.
+// Priority: SINGPASS_CLIENT_JWKS_URI > SINGPASS_CLIENT_JWKS.
 func loadClientKeys(client *http.Client) (*singpassSigningKey, jwk.Key, error) {
 	raw, err := loadClientJWKSRaw(client)
 	if err != nil {
@@ -101,7 +73,7 @@ func loadClientJWKSRaw(client *http.Client) ([]byte, error) {
 	if raw := strings.TrimSpace(os.Getenv("SINGPASS_CLIENT_JWKS")); raw != "" {
 		return []byte(raw), nil
 	}
-	return []byte(mockpassDefaultClientJWKS), nil
+	return nil, errors.New("set SINGPASS_CLIENT_JWKS_URI or SINGPASS_CLIENT_JWKS with the RP private JWKS")
 }
 
 func parseSigningKey(keyset jwksFile) (*singpassSigningKey, error) {

@@ -41,13 +41,13 @@ func NewRouter() *gin.Engine {
 		})
 	}
 	basicGroup.POST("/clerk/callback", api.ClerkCallback)
-	basicGroup.GET("/kyc/singpass/login", api.SingpassLogin)
 	basicGroup.GET("/kyc/singpass/callback", api.SingpassCallback)
 
 	web := basicGroup.Group("/web")
 	web.Use(auth.RequireUser())
 	{
 		web.GET("/user-profile", api.UserGetProfile)
+		web.GET("/kyc/singpass/login", api.SingpassLogin)
 	}
 
 	return r

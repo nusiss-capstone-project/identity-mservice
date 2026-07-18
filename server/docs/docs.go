@@ -81,10 +81,7 @@ const docTemplate = `{
         },
         "/identity-ms/v1/kyc/singpass/callback": {
             "get": {
-                "description": "Handles Singpass callback.",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Validates OAuth state and completes KYC for the user who started login.",
                 "produces": [
                     "application/json"
                 ],
@@ -99,6 +96,13 @@ const docTemplate = `{
                         "name": "code",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "OAuth state",
+                        "name": "state",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -106,7 +110,33 @@ const docTemplate = `{
                         "description": "callback accepted"
                     },
                     "400": {
-                        "description": "invalid code",
+                        "description": "invalid code or state",
+                        "schema": {
+                            "$ref": "#/definitions/data.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/identity-ms/v1/web/kyc/singpass/login": {
+            "get": {
+                "description": "Requires authentication. Returns an authorize URL; the client should redirect the browser to it.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "singpass"
+                ],
+                "summary": "Start Singpass KYC",
+                "responses": {
+                    "200": {
+                        "description": "authorize url",
+                        "schema": {
+                            "$ref": "#/definitions/data.BaseResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
                         "schema": {
                             "$ref": "#/definitions/data.BaseResponse"
                         }

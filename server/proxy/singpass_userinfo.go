@@ -99,12 +99,12 @@ func (p *singpassProxyImpl) decryptUserInfo(encrypted string) (*UserInfo, error)
 	userInfo := mapSingpassClaimsToUserInfo(verified)
 	if userInfo.Name == "" && userInfo.Email == "" && userInfo.Phone == "" {
 		log.Logger.Warnw(
-			"singpass: userinfo claims are empty; authorize scope at login time did not include name/email/mobileno (config scope only applies to /kyc/singpass/login)",
+			"singpass: userinfo claims are empty; authorize scope at login time did not include name/email/mobileno (config scope only applies to /web/kyc/singpass/login)",
 			"configured_scope", config.Config.SingpassConfig.Scope,
-			"claims", string(verified),
+			"userInfo", userInfo.String(),
 		)
 	} else {
-		log.Logger.Debugw("singpass: parsed userinfo claims", "claims", string(verified), "userInfo", userInfo)
+		log.Logger.Debugw("singpass: parsed userinfo claims", "userInfo", userInfo.String())
 	}
 
 	return userInfo, nil

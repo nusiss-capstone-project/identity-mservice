@@ -112,4 +112,48 @@ func TestUserMappingService_CreateUser_propagatesCreateError(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestUserMappingService_CreateUser_skipsWhenEmailEmpty(t *testing.T) {
+	users := new(mocks.UserDao)
+	mappings := new(mocks.UserAuthMappingDao)
+
+	svc := newUserMappingService(mappings, users, fakeTxBeginner{})
+	err := svc.CreateUser(context.Background(), &data.ClerkCallbackData{ID: "user_abc"})
+
+	require.NoError(t, err)
+	mappings.AssertNotCalled(t, "GetByClerkUserID", mock.Anything, mock.Anything)
+	users.AssertNotCalled(t, "CreateInTransaction", mock.Anything, mock.Anything)
+}
+
+func TestUserMappingService_CreateUser_propagatesEmailLookupError(t *testing.T) {
+	users := new(mocks.UserDao)
+	mappings := new(mocks.UserAuthMappingDao)
+	mappings.On("GetByClerkUserID", mock.Anything, "user_abc").Return(nil, nil)
+	mappings.On("GetByEmail", mock.Anything, "alice@example.com").Return(nil, errors.New("db down"))
+
+	svc := newUserMappingService(mappings, users, fakeTxBeginner{})
+	err := svc.CreateUser(context.Background(), clerkUserData())
+
+	require.Error(t, err)
+}
+
+func TestUserMappingService_CreateUser_propagatesMappingCreateError(t *testing.T) {
+	users := new(mocks.UserDao)
+	mappings := new(mocks.UserAuthMappingDao)
+	mappings.On("GetByClerkUserID", mock.Anything, "user_abc").Return(nil, nil)
+	mappings.On("GetByEmail", mock.Anything, "alice@example.com").Return(nil, nil)
+	users.On("CreateInTransaction", mock.Anything, mock.AnythingOfType("*model.User")).
+		Run(func(args mock.Arguments) {
+			u := args.Get(1).(*model.User)
+			u.ID = 100
+		}).
+		Return(nil)
+	mappings.On("CreateInTransaction", mock.Anything, mock.AnythingOfType("*model.UserAuthMapping")).
+		Return(errors.New("mapping insert failed"))
+
+	svc := newUserMappingService(mappings, users, fakeTxBeginner{})
+	err := svc.CreateUser(context.Background(), clerkUserData())
+
+	require.Error(t, err)
+}
+
 var _ repository.TxBeginner = fakeTxBeginner{}

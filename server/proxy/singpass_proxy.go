@@ -29,6 +29,11 @@ type UserInfo struct {
 	Country string `json:"country"`
 }
 
+// String redacts PII for logs; only Name is included.
+func (u UserInfo) String() string {
+	return fmt.Sprintf("UserInfo{Name:%q}", u.Name)
+}
+
 type SingpassProxy interface {
 	GetAccessToken(ctx context.Context, code string) (string, error)
 	GetUserInfo(ctx context.Context, token string) (*UserInfo, error)
