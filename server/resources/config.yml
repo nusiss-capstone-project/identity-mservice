@@ -17,6 +17,7 @@ system:
   - https://campaign-center-admin-web.vercel.app
   - https://finverse-web.vercel.app
   - http://localhost:3000
+  post_kyc_redirect_uri: "http://localhost:3000/profile"
 
 singpass:
   redirect_uri: "http://localhost:8080/identity-ms/v1/kyc/singpass/callback"

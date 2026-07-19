@@ -46,7 +46,8 @@ type GrpcConfig struct {
 }
 
 type SystemConfig struct {
-	AllowedOrigins []string `mapstructure:"allowed_origins"`
+	AllowedOrigins     []string `mapstructure:"allowed_origins"`
+	PostKYCRedirectURI string   `mapstructure:"post_kyc_redirect_uri"`
 }
 
 func Init() {
