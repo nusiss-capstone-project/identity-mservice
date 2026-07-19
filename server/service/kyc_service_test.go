@@ -126,6 +126,47 @@ func TestKYCService_SingpassCallback_rejectsEmailMismatch(t *testing.T) {
 	users.AssertNotCalled(t, "UpdateKYCStatus", mock.Anything, mock.Anything, mock.Anything)
 }
 
+func TestKYCService_SingpassCallback_allowsClerkTestEmailAlias(t *testing.T) {
+	users := new(mocks.UserDao)
+	store := newMemoryKYCStateStore(time.Minute)
+	sp := &fakeSingpassProxy{
+		token: "access-token",
+		info:  &proxy.UserInfo{Name: "USER", Email: "alice@example.com"},
+	}
+	seedState(store, "st", 42, "alice+clerk_test@example.com")
+	users.On("UpdateKYCStatus", mock.Anything, int64(42), model.KYCStatusPassed).Return(nil)
+
+	svc := newKYCService(sp, users, store)
+	err := svc.SingpassCallback(context.Background(), "auth-code", "st")
+
+	require.NoError(t, err)
+	users.AssertExpectations(t)
+}
+
+func TestEmailsMatchForKYC(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name          string
+		pendingEmail  string
+		singpassEmail string
+		want          bool
+	}{
+		{name: "exact match", pendingEmail: "alice@example.com", singpassEmail: "alice@example.com", want: true},
+		{name: "case insensitive", pendingEmail: "Alice@Example.com", singpassEmail: "alice@example.com", want: true},
+		{name: "clerk_test alias", pendingEmail: "alice+clerk_test@example.com", singpassEmail: "alice@example.com", want: true},
+		{name: "clerk_test alias case", pendingEmail: "Alice+clerk_test@Example.com", singpassEmail: "alice@example.com", want: true},
+		{name: "mismatch", pendingEmail: "alice@example.com", singpassEmail: "bob@example.com", want: false},
+		{name: "clerk_test still mismatches other user", pendingEmail: "alice+clerk_test@example.com", singpassEmail: "bob@example.com", want: false},
+		{name: "trim spaces", pendingEmail: "  alice@example.com  ", singpassEmail: "alice@example.com", want: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			require.Equal(t, tt.want, emailsMatchForKYC(tt.pendingEmail, tt.singpassEmail))
+		})
+	}
+}
+
 func TestKYCService_SingpassCallback_propagatesTokenError(t *testing.T) {
 	users := new(mocks.UserDao)
 	store := newMemoryKYCStateStore(time.Minute)
