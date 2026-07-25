@@ -19,6 +19,12 @@ system:
   - http://localhost:3000
   post_kyc_redirect_uri: "http://localhost:3000/profile"
 
+kafka:
+  enabled: false
+  brokers:
+    - localhost:9092
+  client_id: identity-mservice
+
 singpass:
   redirect_uri: "http://localhost:8080/identity-ms/v1/kyc/singpass/callback"
   scope: "openid name email uinfin mobileno"

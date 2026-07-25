@@ -16,6 +16,7 @@ type Conf struct {
 	HttpConfig     *HttpConfig     `mapstructure:"http"`
 	SystemConfig   *SystemConfig   `mapstructure:"system"`
 	SingpassConfig *SingpassConfig `mapstructure:"singpass"`
+	KafkaConfig    *KafkaConfig    `mapstructure:"kafka"`
 }
 
 type SingpassConfig struct {
@@ -48,6 +49,12 @@ type GrpcConfig struct {
 type SystemConfig struct {
 	AllowedOrigins     []string `mapstructure:"allowed_origins"`
 	PostKYCRedirectURI string   `mapstructure:"post_kyc_redirect_uri"`
+}
+
+type KafkaConfig struct {
+	Enabled  bool     `mapstructure:"enabled"`
+	Brokers  []string `mapstructure:"brokers"`
+	ClientID string   `mapstructure:"client_id"`
 }
 
 func Init() {

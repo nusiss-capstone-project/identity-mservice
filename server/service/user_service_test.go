@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/nusiss-capstone-project/identity-mservice/server/http/data"
 	"github.com/nusiss-capstone-project/identity-mservice/server/repository"
@@ -19,6 +20,12 @@ type fakeTxBeginner struct{}
 
 func (fakeTxBeginner) Transaction(fc func(tx *gorm.DB) error, _ ...*sql.TxOptions) error {
 	return fc(nil)
+}
+
+type nopUserRegisteredProducer struct{}
+
+func (nopUserRegisteredProducer) PublishUserRegistered(context.Context, int64, time.Time) error {
+	return nil
 }
 
 func clerkUserData() *data.ClerkCallbackData {
@@ -48,7 +55,7 @@ func TestUserMappingService_CreateUser_createsMapping(t *testing.T) {
 			m.Role == model.RoleUser
 	})).Return(nil)
 
-	svc := newUserMappingService(mappings, users, fakeTxBeginner{})
+	svc := newUserMappingService(mappings, users, fakeTxBeginner{}, nopUserRegisteredProducer{})
 	err := svc.CreateUser(context.Background(), clerkUserData())
 
 	require.NoError(t, err)
@@ -63,7 +70,7 @@ func TestUserMappingService_CreateUser_skipsWhenClerkUserExists(t *testing.T) {
 		ClerkUserID: "user_abc",
 	}, nil)
 
-	svc := newUserMappingService(mappings, users, fakeTxBeginner{})
+	svc := newUserMappingService(mappings, users, fakeTxBeginner{}, nopUserRegisteredProducer{})
 	err := svc.CreateUser(context.Background(), clerkUserData())
 
 	require.NoError(t, err)
@@ -79,7 +86,7 @@ func TestUserMappingService_CreateUser_skipsWhenEmailExists(t *testing.T) {
 		Email: "alice@example.com",
 	}, nil)
 
-	svc := newUserMappingService(mappings, users, fakeTxBeginner{})
+	svc := newUserMappingService(mappings, users, fakeTxBeginner{}, nopUserRegisteredProducer{})
 	err := svc.CreateUser(context.Background(), clerkUserData())
 
 	require.NoError(t, err)
@@ -92,7 +99,7 @@ func TestUserMappingService_CreateUser_propagatesLookupError(t *testing.T) {
 	mappings := new(mocks.UserAuthMappingDao)
 	mappings.On("GetByClerkUserID", mock.Anything, "user_abc").Return(nil, errors.New("db down"))
 
-	svc := newUserMappingService(mappings, users, fakeTxBeginner{})
+	svc := newUserMappingService(mappings, users, fakeTxBeginner{}, nopUserRegisteredProducer{})
 	err := svc.CreateUser(context.Background(), clerkUserData())
 
 	require.Error(t, err)
@@ -106,7 +113,7 @@ func TestUserMappingService_CreateUser_propagatesCreateError(t *testing.T) {
 	users.On("CreateInTransaction", mock.Anything, mock.AnythingOfType("*model.User")).
 		Return(errors.New("insert failed"))
 
-	svc := newUserMappingService(mappings, users, fakeTxBeginner{})
+	svc := newUserMappingService(mappings, users, fakeTxBeginner{}, nopUserRegisteredProducer{})
 	err := svc.CreateUser(context.Background(), clerkUserData())
 
 	require.Error(t, err)
@@ -116,7 +123,7 @@ func TestUserMappingService_CreateUser_skipsWhenEmailEmpty(t *testing.T) {
 	users := new(mocks.UserDao)
 	mappings := new(mocks.UserAuthMappingDao)
 
-	svc := newUserMappingService(mappings, users, fakeTxBeginner{})
+	svc := newUserMappingService(mappings, users, fakeTxBeginner{}, nopUserRegisteredProducer{})
 	err := svc.CreateUser(context.Background(), &data.ClerkCallbackData{ID: "user_abc"})
 
 	require.NoError(t, err)
@@ -130,7 +137,7 @@ func TestUserMappingService_CreateUser_propagatesEmailLookupError(t *testing.T) 
 	mappings.On("GetByClerkUserID", mock.Anything, "user_abc").Return(nil, nil)
 	mappings.On("GetByEmail", mock.Anything, "alice@example.com").Return(nil, errors.New("db down"))
 
-	svc := newUserMappingService(mappings, users, fakeTxBeginner{})
+	svc := newUserMappingService(mappings, users, fakeTxBeginner{}, nopUserRegisteredProducer{})
 	err := svc.CreateUser(context.Background(), clerkUserData())
 
 	require.Error(t, err)
@@ -150,7 +157,7 @@ func TestUserMappingService_CreateUser_propagatesMappingCreateError(t *testing.T
 	mappings.On("CreateInTransaction", mock.Anything, mock.AnythingOfType("*model.UserAuthMapping")).
 		Return(errors.New("mapping insert failed"))
 
-	svc := newUserMappingService(mappings, users, fakeTxBeginner{})
+	svc := newUserMappingService(mappings, users, fakeTxBeginner{}, nopUserRegisteredProducer{})
 	err := svc.CreateUser(context.Background(), clerkUserData())
 
 	require.Error(t, err)

@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/nusiss-capstone-project/identity-mservice/server/kafka/producer"
 	"github.com/nusiss-capstone-project/identity-mservice/server/log"
 	"github.com/nusiss-capstone-project/identity-mservice/server/proxy"
 	"github.com/nusiss-capstone-project/identity-mservice/server/repository/dao"
@@ -24,20 +26,23 @@ type KYCService interface {
 }
 
 type kycServiceImpl struct {
-	singpassProxy proxy.SingpassProxy
-	userDao       dao.UserDao
-	stateStore    KYCStateStore //todo replace redis
+	singpassProxy   proxy.SingpassProxy
+	userDao         dao.UserDao
+	stateStore      KYCStateStore //todo replace redis
+	kycCompleteProd producer.UserKYCCompleteProducer
 }
 
 func newKYCService(
 	singpassProxy proxy.SingpassProxy,
 	userDao dao.UserDao,
 	stateStore KYCStateStore,
+	kycCompleteProd producer.UserKYCCompleteProducer,
 ) KYCService {
 	return &kycServiceImpl{
-		singpassProxy: singpassProxy,
-		userDao:       userDao,
-		stateStore:    stateStore,
+		singpassProxy:   singpassProxy,
+		userDao:         userDao,
+		stateStore:      stateStore,
+		kycCompleteProd: kycCompleteProd,
 	}
 }
 
@@ -83,7 +88,15 @@ func (k *kycServiceImpl) SingpassCallback(ctx context.Context, code, state strin
 	if userInfo.Name != "" {
 		kycStatus = model.KYCStatusPassed
 	}
-	return k.userDao.UpdateKYCStatus(ctx, pending.InternalUserID, kycStatus)
+	kycUpdatedAt := time.Now().UTC()
+	if err = k.userDao.UpdateKYCStatus(ctx, pending.InternalUserID, kycStatus); err != nil {
+		return err
+	}
+	if err = k.kycCompleteProd.PublishUserKYCComplete(ctx, pending.InternalUserID, kycStatus, kycUpdatedAt); err != nil {
+		log.WithContext(ctx).Errorf("publish user kyc complete event user=%d: %v", pending.InternalUserID, err)
+		return err
+	}
+	return nil
 }
 
 // emailsMatchForKYC compares the authenticated user's email with Singpass email.
@@ -109,6 +122,7 @@ func GetKYCService() KYCService {
 			proxy.GetSingpassProxy(),
 			dao.GetUserDao(),
 			GetKYCStateStore(),
+			producer.GetUserKYCCompleteProducer(),
 		)
 	})
 	return kycServiceInstance

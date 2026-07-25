@@ -34,6 +34,12 @@ func seedState(store KYCStateStore, state string, userID int64, email string) {
 	store.Save(state, KYCPending{InternalUserID: userID, Email: email})
 }
 
+type nopUserKYCCompleteProducer struct{}
+
+func (nopUserKYCCompleteProducer) PublishUserKYCComplete(context.Context, int64, string, time.Time) error {
+	return nil
+}
+
 func TestKYCService_StartSingpassLogin_savesStateAndReturnsURL(t *testing.T) {
 	prev := config.Config.SingpassConfig
 	config.Config.SingpassConfig = &config.SingpassConfig{
@@ -46,7 +52,7 @@ func TestKYCService_StartSingpassLogin_savesStateAndReturnsURL(t *testing.T) {
 
 	users := new(mocks.UserDao)
 	store := newMemoryKYCStateStore(time.Minute)
-	svc := newKYCService(&fakeSingpassProxy{}, users, store)
+	svc := newKYCService(&fakeSingpassProxy{}, users, store, nopUserKYCCompleteProducer{})
 
 	url, err := svc.StartSingpassLogin(context.Background(), 42, "alice@example.com")
 	require.NoError(t, err)
@@ -74,7 +80,7 @@ func TestKYCService_SingpassCallback_passesWhenNamePresent(t *testing.T) {
 	seedState(store, "st", 42, "alice@example.com")
 	users.On("UpdateKYCStatus", mock.Anything, int64(42), model.KYCStatusPassed).Return(nil)
 
-	svc := newKYCService(sp, users, store)
+	svc := newKYCService(sp, users, store, nopUserKYCCompleteProducer{})
 	err := svc.SingpassCallback(context.Background(), "auth-code", "st")
 
 	require.NoError(t, err)
@@ -91,7 +97,7 @@ func TestKYCService_SingpassCallback_failsKYCWhenNameEmpty(t *testing.T) {
 	seedState(store, "st", 42, "alice@example.com")
 	users.On("UpdateKYCStatus", mock.Anything, int64(42), model.KYCStatusFailed).Return(nil)
 
-	svc := newKYCService(sp, users, store)
+	svc := newKYCService(sp, users, store, nopUserKYCCompleteProducer{})
 	err := svc.SingpassCallback(context.Background(), "auth-code", "st")
 
 	require.NoError(t, err)
@@ -103,7 +109,7 @@ func TestKYCService_SingpassCallback_rejectsInvalidState(t *testing.T) {
 	store := newMemoryKYCStateStore(time.Minute)
 	sp := &fakeSingpassProxy{token: "access-token"}
 
-	svc := newKYCService(sp, users, store)
+	svc := newKYCService(sp, users, store, nopUserKYCCompleteProducer{})
 	err := svc.SingpassCallback(context.Background(), "auth-code", "unknown")
 
 	require.ErrorIs(t, err, ErrInvalidOAuthState)
@@ -119,7 +125,7 @@ func TestKYCService_SingpassCallback_rejectsEmailMismatch(t *testing.T) {
 	}
 	seedState(store, "st", 42, "alice@example.com")
 
-	svc := newKYCService(sp, users, store)
+	svc := newKYCService(sp, users, store, nopUserKYCCompleteProducer{})
 	err := svc.SingpassCallback(context.Background(), "auth-code", "st")
 
 	require.ErrorIs(t, err, ErrKYCEmailMismatch)
@@ -136,7 +142,7 @@ func TestKYCService_SingpassCallback_allowsClerkTestEmailAlias(t *testing.T) {
 	seedState(store, "st", 42, "alice+clerk_test@example.com")
 	users.On("UpdateKYCStatus", mock.Anything, int64(42), model.KYCStatusPassed).Return(nil)
 
-	svc := newKYCService(sp, users, store)
+	svc := newKYCService(sp, users, store, nopUserKYCCompleteProducer{})
 	err := svc.SingpassCallback(context.Background(), "auth-code", "st")
 
 	require.NoError(t, err)
@@ -173,7 +179,7 @@ func TestKYCService_SingpassCallback_propagatesTokenError(t *testing.T) {
 	sp := &fakeSingpassProxy{tokenErr: errors.New("token failed")}
 	seedState(store, "st", 42, "alice@example.com")
 
-	svc := newKYCService(sp, users, store)
+	svc := newKYCService(sp, users, store, nopUserKYCCompleteProducer{})
 	err := svc.SingpassCallback(context.Background(), "auth-code", "st")
 
 	require.Error(t, err)
@@ -185,7 +191,7 @@ func TestKYCService_SingpassCallback_propagatesUserInfoError(t *testing.T) {
 	sp := &fakeSingpassProxy{token: "access-token", infoErr: errors.New("userinfo failed")}
 	seedState(store, "st", 42, "alice@example.com")
 
-	svc := newKYCService(sp, users, store)
+	svc := newKYCService(sp, users, store, nopUserKYCCompleteProducer{})
 	err := svc.SingpassCallback(context.Background(), "auth-code", "st")
 
 	require.Error(t, err)
@@ -202,7 +208,7 @@ func TestKYCService_SingpassCallback_propagatesUpdateError(t *testing.T) {
 	users.On("UpdateKYCStatus", mock.Anything, int64(42), model.KYCStatusPassed).
 		Return(errors.New("update failed"))
 
-	svc := newKYCService(sp, users, store)
+	svc := newKYCService(sp, users, store, nopUserKYCCompleteProducer{})
 	err := svc.SingpassCallback(context.Background(), "auth-code", "st")
 
 	require.Error(t, err)
@@ -218,7 +224,7 @@ func TestKYCService_SingpassCallback_consumesStateOnce(t *testing.T) {
 	seedState(store, "st", 42, "alice@example.com")
 	users.On("UpdateKYCStatus", mock.Anything, int64(42), model.KYCStatusPassed).Return(nil)
 
-	svc := newKYCService(sp, users, store)
+	svc := newKYCService(sp, users, store, nopUserKYCCompleteProducer{})
 	require.NoError(t, svc.SingpassCallback(context.Background(), "auth-code", "st"))
 	require.ErrorIs(t, svc.SingpassCallback(context.Background(), "auth-code", "st"), ErrInvalidOAuthState)
 }
@@ -231,7 +237,7 @@ func TestKYCService_SingpassCallback_rejectsExpiredState(t *testing.T) {
 	seedState(store, "st", 42, "alice@example.com")
 	store.now = func() time.Time { return fixed.Add(2 * time.Minute) }
 
-	svc := newKYCService(&fakeSingpassProxy{token: "access-token"}, users, store)
+	svc := newKYCService(&fakeSingpassProxy{token: "access-token"}, users, store, nopUserKYCCompleteProducer{})
 	err := svc.SingpassCallback(context.Background(), "auth-code", "st")
 
 	require.ErrorIs(t, err, ErrInvalidOAuthState)
@@ -243,7 +249,7 @@ func TestKYCService_SingpassCallback_rejectsEmptyState(t *testing.T) {
 	store := newMemoryKYCStateStore(time.Minute)
 	seedState(store, "st", 42, "alice@example.com")
 
-	svc := newKYCService(&fakeSingpassProxy{token: "access-token"}, users, store)
+	svc := newKYCService(&fakeSingpassProxy{token: "access-token"}, users, store, nopUserKYCCompleteProducer{})
 	err := svc.SingpassCallback(context.Background(), "auth-code", "")
 
 	require.ErrorIs(t, err, ErrInvalidOAuthState)
@@ -261,7 +267,7 @@ func TestKYCService_SingpassCallback_updatesBoundUserNotEmailLookup(t *testing.T
 	seedState(store, "st", 99, "alice@example.com")
 	users.On("UpdateKYCStatus", mock.Anything, int64(99), model.KYCStatusPassed).Return(nil)
 
-	svc := newKYCService(sp, users, store)
+	svc := newKYCService(sp, users, store, nopUserKYCCompleteProducer{})
 	err := svc.SingpassCallback(context.Background(), "auth-code", "st")
 
 	require.NoError(t, err)
@@ -278,7 +284,7 @@ func TestKYCService_SingpassCallback_allowsCaseInsensitiveEmailMatch(t *testing.
 	seedState(store, "st", 42, "alice@example.com")
 	users.On("UpdateKYCStatus", mock.Anything, int64(42), model.KYCStatusPassed).Return(nil)
 
-	svc := newKYCService(sp, users, store)
+	svc := newKYCService(sp, users, store, nopUserKYCCompleteProducer{})
 	err := svc.SingpassCallback(context.Background(), "auth-code", "st")
 
 	require.NoError(t, err)
@@ -302,7 +308,7 @@ func TestKYCService_StartSingpassLogin_roundTripWithCallback(t *testing.T) {
 	}
 	users.On("UpdateKYCStatus", mock.Anything, int64(42), model.KYCStatusPassed).Return(nil)
 
-	svc := newKYCService(sp, users, store)
+	svc := newKYCService(sp, users, store, nopUserKYCCompleteProducer{})
 	authorizeURL, err := svc.StartSingpassLogin(context.Background(), 42, "alice@example.com")
 	require.NoError(t, err)
 
