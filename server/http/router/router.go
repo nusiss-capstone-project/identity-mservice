@@ -55,7 +55,7 @@ func NewRouter() *gin.Engine {
 	}
 
 	admin := basicGroup.Group("/admin")
-	admin.Use(commonauth.RequireUser())
+	admin.Use(commonauth.RequireRole(nil)) // authenticate only; any role may query current-role
 	{
 		admin.GET("/current-role", api.AdminGetCurrentRole)
 	}

@@ -17,10 +17,9 @@ func PermitAll() gin.HandlerFunc {
 	}
 }
 
-// RequireUser requires authentication (valid identity headers) but does not check roles.
-// This is not PermitAll: missing identity still returns 401.
+// RequireUser authenticates and requires the web user role ("user").
 func RequireUser() gin.HandlerFunc {
-	return authenticate()
+	return RequireRole([]string{RoleUser})
 }
 
 // RequireAdmin authenticates and requires the admin role.
@@ -28,8 +27,8 @@ func RequireAdmin() gin.HandlerFunc {
 	return RequireRole([]string{RoleAdmin})
 }
 
-// RequireRole authenticates and requires the caller's role to be one of roles.
-// An empty roles list means authentication only (same as RequireUser), not PermitAll.
+// RequireRole authenticates via identity headers and requires the caller's role to be one of roles.
+// An empty roles list means authentication only (any role), not PermitAll and not RequireUser.
 func RequireRole(roles []string) gin.HandlerFunc {
 	allowed := make(map[string]struct{}, len(roles))
 	for _, role := range roles {
@@ -39,31 +38,17 @@ func RequireRole(roles []string) gin.HandlerFunc {
 		}
 		allowed[role] = struct{}{}
 	}
-	if len(allowed) == 0 {
-		return RequireUser()
-	}
 	return func(c *gin.Context) {
 		user, ok := userFromHeaders(c)
 		if !ok {
 			unauthorized(c)
 			return
 		}
-		if _, ok := allowed[user.Role]; !ok {
-			forbidden(c)
-			return
-		}
-		ctx := WithUser(c.Request.Context(), user)
-		c.Request = c.Request.WithContext(ctx)
-		c.Next()
-	}
-}
-
-func authenticate() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		user, ok := userFromHeaders(c)
-		if !ok {
-			unauthorized(c)
-			return
+		if len(allowed) > 0 {
+			if _, ok := allowed[user.Role]; !ok {
+				forbidden(c)
+				return
+			}
 		}
 		ctx := WithUser(c.Request.Context(), user)
 		c.Request = c.Request.WithContext(ctx)

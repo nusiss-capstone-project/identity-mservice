@@ -23,12 +23,20 @@ func TestRequireUser_invalidUserIDReturns401(t *testing.T) {
 	require.Equal(t, http.StatusUnauthorized, rec.Code)
 }
 
-func TestRequireUser_validHeadersCanAccess(t *testing.T) {
+func TestRequireUser_requiresUserRole(t *testing.T) {
 	rec := exerciseHeaderAuth(t, RequireUser(), map[string]string{
 		HeaderInternalUserID: "42",
 		HeaderUserRole:       RoleUser,
 	}, "192.0.2.1:12345")
 	require.Equal(t, http.StatusOK, rec.Code)
+}
+
+func TestRequireUser_rejectsAdminRole(t *testing.T) {
+	rec := exerciseHeaderAuth(t, RequireUser(), map[string]string{
+		HeaderInternalUserID: "1",
+		HeaderUserRole:       RoleAdmin,
+	}, "192.0.2.1:12345")
+	require.Equal(t, http.StatusForbidden, rec.Code)
 }
 
 func TestRequireAdmin_userRoleReturns403(t *testing.T) {
@@ -48,7 +56,7 @@ func TestRequireAdmin_adminRoleCanAccess(t *testing.T) {
 	require.Equal(t, http.StatusOK, rec.Code)
 }
 
-func TestRequireRole_emptyMeansAuthenticateOnlyNotPermitAll(t *testing.T) {
+func TestRequireRole_emptyMeansAuthenticateOnly(t *testing.T) {
 	rec := exerciseHeaderAuth(t, RequireRole(nil), nil, "192.0.2.1:12345")
 	require.Equal(t, http.StatusUnauthorized, rec.Code)
 
