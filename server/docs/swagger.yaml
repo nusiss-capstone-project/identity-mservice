@@ -42,26 +42,6 @@ definitions:
 info:
   contact: {}
 paths:
-  /identity-ms/v1/auth/forward:
-    get:
-      description: Internal endpoint for Traefik ForwardAuth. Always returns HTTP
-        200 with an empty body. When Authorization Bearer JWT is valid, sets X-Internal-User-Id
-        and X-User-Role response headers; otherwise leaves them unset.
-      parameters:
-      - description: Bearer Clerk JWT
-        in: header
-        name: Authorization
-        type: string
-      produces:
-      - text/plain
-      responses:
-        "200":
-          description: empty body; identity headers set only when authenticated
-          schema:
-            type: string
-      summary: Traefik ForwardAuth identity headers
-      tags:
-      - auth
   /identity-ms/v1/clerk/callback:
     post:
       consumes:

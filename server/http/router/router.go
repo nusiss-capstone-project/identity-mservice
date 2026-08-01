@@ -42,7 +42,9 @@ func NewRouter() *gin.Engine {
 	}
 	basicGroup.POST("/clerk/callback", api.ClerkCallback)
 	basicGroup.GET("/kyc/singpass/callback", api.SingpassCallback)
-	basicGroup.GET("/auth/forward", commonauth.RequireInternalNetwork(), api.AuthForward)
+
+	// Outside /identity-ms/v1 so Traefik ForwardAuth on that prefix cannot recurse.
+	r.GET("/auth/forward", commonauth.RequireInternalNetwork(), api.AuthForward)
 
 	web := basicGroup.Group("/web")
 	web.Use(commonauth.RequireUser())

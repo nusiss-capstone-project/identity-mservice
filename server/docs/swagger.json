@@ -4,34 +4,6 @@
         "contact": {}
     },
     "paths": {
-        "/identity-ms/v1/auth/forward": {
-            "get": {
-                "description": "Internal endpoint for Traefik ForwardAuth. Always returns HTTP 200 with an empty body. When Authorization Bearer JWT is valid, sets X-Internal-User-Id and X-User-Role response headers; otherwise leaves them unset.",
-                "produces": [
-                    "text/plain"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "Traefik ForwardAuth identity headers",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer Clerk JWT",
-                        "name": "Authorization",
-                        "in": "header"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "empty body; identity headers set only when authenticated",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
         "/identity-ms/v1/clerk/callback": {
             "post": {
                 "description": "Verifies Svix signature headers and accepts Clerk webhook events (e.g. user.created).",
