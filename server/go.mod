@@ -7,7 +7,8 @@ require (
 	github.com/gin-gonic/gin v1.12.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/lestrrat-go/jwx/v2 v2.1.6
-	github.com/nusiss-capstone-project/identity-mservice/common v0.0.1
+	github.com/nusiss-capstone-project/identity-mservice/common v0.0.2-alpha.1
+	github.com/redis/go-redis/v9 v9.11.0
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
 	github.com/svix/svix-webhooks v1.95.1
@@ -43,6 +44,7 @@ require (
 	github.com/cloudwego/base64x v0.1.6 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
 	github.com/gin-contrib/sse v1.1.1 // indirect
@@ -116,3 +118,5 @@ require (
 )
 
 replace gopkg.in/yaml.v3 => gopkg.in/yaml.v3 v3.0.1
+
+replace github.com/nusiss-capstone-project/identity-mservice/common => ../common

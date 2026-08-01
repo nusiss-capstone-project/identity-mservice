@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/nusiss-capstone-project/identity-mservice/server/auth"
+	commonauth "github.com/nusiss-capstone-project/identity-mservice/common/auth"
 	"github.com/nusiss-capstone-project/identity-mservice/server/http/data"
 	"github.com/nusiss-capstone-project/identity-mservice/server/service"
 )
@@ -33,7 +33,7 @@ type UserProfileHTTPResponse struct {
 // @Failure 500 {object} data.BaseResponse "internal error"
 // @Router /identity-ms/v1/web/user-profile [get]
 func UserGetProfile(c *gin.Context) {
-	user, ok := auth.GetUser(c.Request.Context())
+	user, ok := commonauth.GetUser(c.Request.Context())
 	if !ok {
 		authError(c)
 		return

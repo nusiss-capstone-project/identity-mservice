@@ -13,6 +13,7 @@ import (
 	"github.com/nusiss-capstone-project/identity-mservice/server/kafka/producer"
 	"github.com/nusiss-capstone-project/identity-mservice/server/log"
 	"github.com/nusiss-capstone-project/identity-mservice/server/repository"
+	"github.com/nusiss-capstone-project/identity-mservice/server/repository/redis"
 	"github.com/nusiss-capstone-project/identity-mservice/server/telemetry"
 )
 
@@ -24,6 +25,7 @@ func main() {
 	config.Init()
 	log.InitLogger()
 	repository.Init()
+	redis.Init()
 
 	shutdownTelemetry := telemetry.Init(context.Background())
 	defer func() {

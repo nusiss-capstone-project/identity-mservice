@@ -5,6 +5,9 @@ import "context"
 const (
 	RoleAdmin = "admin"
 	RoleUser  = "user"
+
+	HeaderInternalUserID = "X-Internal-User-Id"
+	HeaderUserRole       = "X-User-Role"
 )
 
 type contextKey struct{}

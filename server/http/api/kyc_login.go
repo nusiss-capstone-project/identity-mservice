@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/nusiss-capstone-project/identity-mservice/server/auth"
+	commonauth "github.com/nusiss-capstone-project/identity-mservice/common/auth"
 	"github.com/nusiss-capstone-project/identity-mservice/server/config"
 	"github.com/nusiss-capstone-project/identity-mservice/server/http/data"
 	"github.com/nusiss-capstone-project/identity-mservice/server/log"
@@ -27,7 +27,7 @@ type SingpassLoginData struct {
 // @Failure 401 {object} data.BaseResponse "authentication required"
 // @Router /identity-ms/v1/web/kyc/singpass/login [get]
 func SingpassLogin(c *gin.Context) {
-	user, ok := auth.GetUser(c.Request.Context())
+	user, ok := commonauth.GetUser(c.Request.Context())
 	if !ok {
 		authError(c)
 		return

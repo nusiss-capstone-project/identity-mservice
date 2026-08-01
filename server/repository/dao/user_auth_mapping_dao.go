@@ -37,6 +37,10 @@ func GetUserAuthMappingDao() *UserAuthMappingDaoImpl {
 }
 
 func (dao *UserAuthMappingDaoImpl) GetByClerkUserID(ctx context.Context, clerkUserID string) (*model.UserAuthMapping, error) {
+	if cached, ok := dao.getMappingFromCache(ctx, clerkUserID); ok {
+		log.WithContext(ctx).Infof("User auth mapping found in cache: %v", cached)
+		return cached, nil
+	}
 	if dao.db == nil {
 		return nil, ErrDatabaseDisabled
 	}
@@ -49,6 +53,8 @@ func (dao *UserAuthMappingDaoImpl) GetByClerkUserID(ctx context.Context, clerkUs
 		log.Logger.Errorf("Failed to get user auth mapping: %v", ret.Error)
 		return nil, ret.Error
 	}
+	dao.setMappingCache(ctx, &row)
+	log.WithContext(ctx).Infof("User auth mapping set in cache: %v", row)
 	return &row, nil
 }
 
@@ -72,7 +78,14 @@ func (dao *UserAuthMappingDaoImpl) CreateInTransaction(trx *gorm.DB, userAuthMap
 	if dao.db == nil {
 		return ErrDatabaseDisabled
 	}
+	ctx := context.Background()
+	if userAuthMapping != nil {
+		dao.deleteMappingCache(ctx, userAuthMapping.ClerkUserID)
+	}
 	ret := trx.Create(userAuthMapping)
 	log.Logger.Infof("User auth mapping created: %v", ret)
+	if userAuthMapping != nil {
+		dao.deleteMappingCache(ctx, userAuthMapping.ClerkUserID)
+	}
 	return ret.Error
 }
