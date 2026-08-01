@@ -10,26 +10,38 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RequireUser authenticates via Traefik-forwarded identity headers.
+// RequireUser authenticates via Traefik-forwarded identity headers (no role check).
 func RequireUser() gin.HandlerFunc {
-	return requireHeaderRole("")
+	return RequireRole(nil)
 }
 
 // RequireAdmin authenticates via headers and requires the admin role.
 func RequireAdmin() gin.HandlerFunc {
-	return requireHeaderRole(RoleAdmin)
+	return RequireRole([]string{RoleAdmin})
 }
 
-func requireHeaderRole(role string) gin.HandlerFunc {
+// RequireRole authenticates via identity headers. When roles is empty, only authentication
+// is required; otherwise the caller's role must be one of the listed values.
+func RequireRole(roles []string) gin.HandlerFunc {
+	allowed := make(map[string]struct{}, len(roles))
+	for _, role := range roles {
+		role = strings.TrimSpace(role)
+		if role == "" {
+			continue
+		}
+		allowed[role] = struct{}{}
+	}
 	return func(c *gin.Context) {
 		user, ok := userFromHeaders(c)
 		if !ok {
 			unauthorized(c)
 			return
 		}
-		if role == RoleAdmin && user.Role != RoleAdmin {
-			forbidden(c)
-			return
+		if len(allowed) > 0 {
+			if _, ok := allowed[user.Role]; !ok {
+				forbidden(c)
+				return
+			}
 		}
 		ctx := WithUser(c.Request.Context(), user)
 		c.Request = c.Request.WithContext(ctx)
@@ -65,7 +77,7 @@ func forbidden(c *gin.Context) {
 	c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 		"code":    -1,
 		"data":    nil,
-		"message": "Admin permission required",
+		"message": "Permission required",
 	})
 }
 

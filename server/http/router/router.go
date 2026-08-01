@@ -54,6 +54,12 @@ func NewRouter() *gin.Engine {
 		web.GET("/kyc/singpass/login", api.SingpassLogin)
 	}
 
+	admin := basicGroup.Group("/admin")
+	admin.Use(commonauth.RequireUser())
+	{
+		admin.GET("/current-role", api.AdminGetCurrentRole)
+	}
+
 	return r
 }
 

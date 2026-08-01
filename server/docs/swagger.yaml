@@ -5,6 +5,23 @@ definitions:
         example: Missing svix headers
         type: string
     type: object
+  api.CurrentRoleData:
+    properties:
+      role:
+        example: admin
+        type: string
+    type: object
+  api.CurrentRoleHTTPResponse:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/api.CurrentRoleData'
+      message:
+        example: success
+        type: string
+    type: object
   api.UserProfileData:
     properties:
       email:
@@ -42,6 +59,22 @@ definitions:
 info:
   contact: {}
 paths:
+  /identity-ms/v1/admin/current-role:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/api.CurrentRoleHTTPResponse'
+        "401":
+          description: authentication required
+          schema:
+            $ref: '#/definitions/data.BaseResponse'
+      summary: Get current role
+      tags:
+      - admin
   /identity-ms/v1/clerk/callback:
     post:
       consumes:

@@ -37,7 +37,7 @@ func TestRequireAdmin_userRoleReturns403(t *testing.T) {
 		HeaderUserRole:       RoleUser,
 	}, "192.0.2.1:12345")
 	require.Equal(t, http.StatusForbidden, rec.Code)
-	require.Contains(t, rec.Body.String(), "Admin permission required")
+	require.Contains(t, rec.Body.String(), "Permission required")
 }
 
 func TestRequireAdmin_adminRoleCanAccess(t *testing.T) {
@@ -46,6 +46,30 @@ func TestRequireAdmin_adminRoleCanAccess(t *testing.T) {
 		HeaderUserRole:       RoleAdmin,
 	}, "192.0.2.1:12345")
 	require.Equal(t, http.StatusOK, rec.Code)
+}
+
+func TestRequireRole_emptyAllowsAnyRole(t *testing.T) {
+	rec := exerciseHeaderAuth(t, RequireRole(nil), map[string]string{
+		HeaderInternalUserID: "7",
+		HeaderUserRole:       RoleCampaignOps,
+	}, "192.0.2.1:12345")
+	require.Equal(t, http.StatusOK, rec.Code)
+}
+
+func TestRequireRole_allowsListedRole(t *testing.T) {
+	rec := exerciseHeaderAuth(t, RequireRole([]string{RoleFinanceAdmin, RoleCampaignOps}), map[string]string{
+		HeaderInternalUserID: "7",
+		HeaderUserRole:       RoleFinanceAdmin,
+	}, "192.0.2.1:12345")
+	require.Equal(t, http.StatusOK, rec.Code)
+}
+
+func TestRequireRole_rejectsUnlistedRole(t *testing.T) {
+	rec := exerciseHeaderAuth(t, RequireRole([]string{RoleFinanceAdmin}), map[string]string{
+		HeaderInternalUserID: "7",
+		HeaderUserRole:       RoleUser,
+	}, "192.0.2.1:12345")
+	require.Equal(t, http.StatusForbidden, rec.Code)
 }
 
 func TestRequireInternalNetwork_allowsPrivateIP(t *testing.T) {

@@ -3,8 +3,10 @@ package auth
 import "context"
 
 const (
-	RoleAdmin = "admin"
-	RoleUser  = "user"
+	RoleAdmin        = "admin"
+	RoleUser         = "user"
+	RoleFinanceAdmin = "finance_admin"
+	RoleCampaignOps  = "campaign_ops"
 
 	HeaderInternalUserID = "X-Internal-User-Id"
 	HeaderUserRole       = "X-User-Role"

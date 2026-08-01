@@ -15,6 +15,31 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/identity-ms/v1/admin/current-role": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get current role",
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "$ref": "#/definitions/api.CurrentRoleHTTPResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/data.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/identity-ms/v1/clerk/callback": {
             "post": {
                 "description": "Verifies Svix signature headers and accepts Clerk webhook events (e.g. user.created).",
@@ -180,6 +205,31 @@ const docTemplate = `{
                 "error": {
                     "type": "string",
                     "example": "Missing svix headers"
+                }
+            }
+        },
+        "api.CurrentRoleData": {
+            "type": "object",
+            "properties": {
+                "role": {
+                    "type": "string",
+                    "example": "admin"
+                }
+            }
+        },
+        "api.CurrentRoleHTTPResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "$ref": "#/definitions/api.CurrentRoleData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "success"
                 }
             }
         },
