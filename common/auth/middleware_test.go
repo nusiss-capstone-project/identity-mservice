@@ -48,11 +48,28 @@ func TestRequireAdmin_adminRoleCanAccess(t *testing.T) {
 	require.Equal(t, http.StatusOK, rec.Code)
 }
 
-func TestRequireRole_emptyAllowsAnyRole(t *testing.T) {
-	rec := exerciseHeaderAuth(t, RequireRole(nil), map[string]string{
+func TestRequireRole_emptyMeansAuthenticateOnlyNotPermitAll(t *testing.T) {
+	rec := exerciseHeaderAuth(t, RequireRole(nil), nil, "192.0.2.1:12345")
+	require.Equal(t, http.StatusUnauthorized, rec.Code)
+
+	rec = exerciseHeaderAuth(t, RequireRole(nil), map[string]string{
 		HeaderInternalUserID: "7",
 		HeaderUserRole:       RoleCampaignOps,
 	}, "192.0.2.1:12345")
+	require.Equal(t, http.StatusOK, rec.Code)
+}
+
+func TestPermitAll_allowsMissingHeaders(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(PermitAll())
+	r.GET("/x", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+	req := httptest.NewRequest(http.MethodGet, "/x", nil)
+	req.RemoteAddr = "192.0.2.1:12345"
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
 	require.Equal(t, http.StatusOK, rec.Code)
 }
 
