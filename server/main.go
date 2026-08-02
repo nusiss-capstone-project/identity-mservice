@@ -10,8 +10,10 @@ import (
 	"github.com/nusiss-capstone-project/identity-mservice/server/config"
 	"github.com/nusiss-capstone-project/identity-mservice/server/grpc"
 	"github.com/nusiss-capstone-project/identity-mservice/server/http"
+	"github.com/nusiss-capstone-project/identity-mservice/server/kafka/producer"
 	"github.com/nusiss-capstone-project/identity-mservice/server/log"
 	"github.com/nusiss-capstone-project/identity-mservice/server/repository"
+	"github.com/nusiss-capstone-project/identity-mservice/server/repository/redis"
 	"github.com/nusiss-capstone-project/identity-mservice/server/telemetry"
 )
 
@@ -23,6 +25,7 @@ func main() {
 	config.Init()
 	log.InitLogger()
 	repository.Init()
+	redis.Init()
 
 	shutdownTelemetry := telemetry.Init(context.Background())
 	defer func() {
@@ -32,6 +35,11 @@ func main() {
 			log.Logger.Errorw("telemetry shutdown failed", "error", err)
 		}
 	}()
+
+	producer.Ensure()
+	if config.Config.KafkaConfig == nil || !config.Config.KafkaConfig.Enabled {
+		log.Logger.Info("kafka disabled")
+	}
 
 	go grpc.Init(sigCh)
 	go http.Init(sigCh)

@@ -4,6 +4,31 @@
         "contact": {}
     },
     "paths": {
+        "/identity-ms/v1/admin/current-role": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get current role",
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "$ref": "#/definitions/api.CurrentRoleHTTPResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/data.BaseResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/identity-ms/v1/clerk/callback": {
             "post": {
                 "description": "Verifies Svix signature headers and accepts Clerk webhook events (e.g. user.created).",
@@ -70,10 +95,7 @@
         },
         "/identity-ms/v1/kyc/singpass/callback": {
             "get": {
-                "description": "Validates OAuth state and completes KYC for the user who started login.",
-                "produces": [
-                    "application/json"
-                ],
+                "description": "Validates OAuth state and completes KYC for the user who started login, then redirects to post_kyc_redirect_uri.",
                 "tags": [
                     "singpass"
                 ],
@@ -95,8 +117,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "callback accepted"
+                    "302": {
+                        "description": "redirect to post_kyc_redirect_uri"
                     },
                     "400": {
                         "description": "invalid code or state",
@@ -172,6 +194,31 @@
                 "error": {
                     "type": "string",
                     "example": "Missing svix headers"
+                }
+            }
+        },
+        "api.CurrentRoleData": {
+            "type": "object",
+            "properties": {
+                "role": {
+                    "type": "string",
+                    "example": "admin"
+                }
+            }
+        },
+        "api.CurrentRoleHTTPResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "$ref": "#/definitions/api.CurrentRoleData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "success"
                 }
             }
         },

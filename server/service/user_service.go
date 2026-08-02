@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/nusiss-capstone-project/identity-mservice/server/http/data"
+	"github.com/nusiss-capstone-project/identity-mservice/server/kafka/producer"
 	"github.com/nusiss-capstone-project/identity-mservice/server/log"
 	"github.com/nusiss-capstone-project/identity-mservice/server/repository"
 	"github.com/nusiss-capstone-project/identity-mservice/server/repository/dao"
@@ -30,17 +31,20 @@ type userServiceImpl struct {
 	userAuthMappingDao dao.UserAuthMappingDao
 	userDao            dao.UserDao
 	tx                 repository.TxBeginner
+	registeredProducer producer.UserRegisteredProducer
 }
 
 func newUserMappingService(
 	userAuthMappingDao dao.UserAuthMappingDao,
 	userDao dao.UserDao,
 	tx repository.TxBeginner,
+	registeredProducer producer.UserRegisteredProducer,
 ) UserMappingService {
 	return &userServiceImpl{
 		userAuthMappingDao: userAuthMappingDao,
 		userDao:            userDao,
 		tx:                 tx,
+		registeredProducer: registeredProducer,
 	}
 }
 
@@ -50,6 +54,7 @@ func GetUserMappingService() UserMappingService {
 			dao.GetUserAuthMappingDao(),
 			dao.GetUserDao(),
 			repository.DB,
+			producer.GetUserRegisteredProducer(),
 		)
 	})
 	return userMappingServiceInst
@@ -88,7 +93,7 @@ func (s *userServiceImpl) CreateUser(ctx context.Context, clerkCallbackData *dat
 		KYCStatus: model.KYCStatusPending,
 		CreatedAt: time.Now(),
 	}
-	return s.tx.Transaction(func(tx *gorm.DB) error {
+	if err = s.tx.Transaction(func(tx *gorm.DB) error {
 		if err = s.userDao.CreateInTransaction(tx, user); err != nil {
 			return err
 		}
@@ -99,7 +104,15 @@ func (s *userServiceImpl) CreateUser(ctx context.Context, clerkCallbackData *dat
 			Role:           model.RoleUser,
 		}
 		return s.userAuthMappingDao.CreateInTransaction(tx, userMapping)
-	})
+	}); err != nil {
+		return err
+	}
+
+	if err = s.registeredProducer.PublishUserRegistered(ctx, user.ID, user.CreatedAt); err != nil {
+		log.WithContext(ctx).Errorf("publish user registered event user=%d: %v", user.ID, err)
+		return err
+	}
+	return nil
 }
 
 func randomGenName() string {

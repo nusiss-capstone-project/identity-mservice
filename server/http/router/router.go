@@ -6,7 +6,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
-	"github.com/nusiss-capstone-project/identity-mservice/server/auth"
+	commonauth "github.com/nusiss-capstone-project/identity-mservice/common/auth"
 	"github.com/nusiss-capstone-project/identity-mservice/server/config"
 	_ "github.com/nusiss-capstone-project/identity-mservice/server/docs"
 	"github.com/nusiss-capstone-project/identity-mservice/server/http/api"
@@ -43,11 +43,21 @@ func NewRouter() *gin.Engine {
 	basicGroup.POST("/clerk/callback", api.ClerkCallback)
 	basicGroup.GET("/kyc/singpass/callback", api.SingpassCallback)
 
+	// Outside /identity-ms/v1 so Traefik ForwardAuth on that prefix cannot recurse.
+	// Traefik ForwardAuth reuses the original request method, so accept any method.
+	r.Any("/auth/forward", commonauth.RequireInternalNetwork(), api.AuthForward)
+
 	web := basicGroup.Group("/web")
-	web.Use(auth.RequireUser())
+	web.Use(commonauth.RequireUser())
 	{
 		web.GET("/user-profile", api.UserGetProfile)
 		web.GET("/kyc/singpass/login", api.SingpassLogin)
+	}
+
+	admin := basicGroup.Group("/admin")
+	admin.Use(commonauth.RequireRole(nil)) // authenticate only; any role may query current-role
+	{
+		admin.GET("/current-role", api.AdminGetCurrentRole)
 	}
 
 	return r
@@ -60,10 +70,11 @@ func corsMiddleware() gin.HandlerFunc {
 			"GET", "POST", "PUT", "DELETE", "OPTIONS",
 		},
 		AllowHeaders: []string{
-			"Origin", "Content-Type", "Accept", "Authorization", log.RequestIDHeader,
+			"Origin", "Content-Type", "Accept", "Authorization",
+			commonauth.HeaderInternalUserID, commonauth.HeaderUserRole, log.RequestIDHeader,
 		},
 		ExposeHeaders: []string{
-			"Content-Length", log.RequestIDHeader,
+			"Content-Length", commonauth.HeaderInternalUserID, commonauth.HeaderUserRole, log.RequestIDHeader,
 		},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,

@@ -3,9 +3,11 @@ package api
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/nusiss-capstone-project/identity-mservice/server/auth"
+	commonauth "github.com/nusiss-capstone-project/identity-mservice/common/auth"
+	"github.com/nusiss-capstone-project/identity-mservice/server/config"
 	"github.com/nusiss-capstone-project/identity-mservice/server/http/data"
 	"github.com/nusiss-capstone-project/identity-mservice/server/log"
 	"github.com/nusiss-capstone-project/identity-mservice/server/service"
@@ -25,7 +27,7 @@ type SingpassLoginData struct {
 // @Failure 401 {object} data.BaseResponse "authentication required"
 // @Router /identity-ms/v1/web/kyc/singpass/login [get]
 func SingpassLogin(c *gin.Context) {
-	user, ok := auth.GetUser(c.Request.Context())
+	user, ok := commonauth.GetUser(c.Request.Context())
 	if !ok {
 		authError(c)
 		return
@@ -40,12 +42,11 @@ func SingpassLogin(c *gin.Context) {
 
 // SingpassCallback handles Singpass callback.
 // @Summary Singpass callback
-// @Description Validates OAuth state and completes KYC for the user who started login.
+// @Description Validates OAuth state and completes KYC for the user who started login, then redirects to post_kyc_redirect_uri.
 // @Tags singpass
-// @Produce json
 // @Param code query string true "Singpass code"
 // @Param state query string true "OAuth state"
-// @Success 200 "callback accepted"
+// @Success 302 "redirect to post_kyc_redirect_uri"
 // @Failure 400 {object} data.BaseResponse "invalid code or state"
 // @Router /identity-ms/v1/kyc/singpass/callback [get]
 func SingpassCallback(c *gin.Context) {
@@ -74,5 +75,13 @@ func SingpassCallback(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "Callback accepted"})
+	redirectURI := ""
+	if config.Config != nil && config.Config.SystemConfig != nil {
+		redirectURI = strings.TrimSpace(config.Config.SystemConfig.PostKYCRedirectURI)
+	}
+	if redirectURI == "" {
+		c.JSON(http.StatusOK, gin.H{"message": "Callback accepted"})
+		return
+	}
+	c.Redirect(http.StatusFound, redirectURI)
 }

@@ -95,14 +95,43 @@ func newSingpassProxy() SingpassProxy {
 		log.Logger.Errorw("singpass: failed to load client keys", "error", err)
 	}
 
+	assertionAud := resolveAssertionAud(cfg)
+	log.Logger.Infow("singpass: proxy initialized",
+		"client_id", clientID,
+		"issuer_url", cfg.IssuerURL,
+		"assertion_aud", assertionAud,
+		"token_url", cfg.TokenURL,
+		"user_info_url", cfg.UserInfoURL,
+		"jwks_uri", jwksURI,
+		"redirect_uri", cfg.RedirectURI,
+	)
+
 	return &singpassProxyImpl{
 		Client:        client,
 		ClientID:      clientID,
-		Issuer:        cfg.IssuerURL,
+		Issuer:        assertionAud,
 		SigningKey:    signingKey,
 		EncryptionKey: encryptionKey,
 		ASPKeySet:     aspKeySet,
 	}
+}
+
+// resolveAssertionAud is the aud claim for client_assertion.
+// Priority: assertion_aud > token_url without "/token" > issuer_url.
+// This lets issuer_url stay public for browser redirects while token calls use an internal MockPass.
+func resolveAssertionAud(cfg *config.SingpassConfig) string {
+	if cfg == nil {
+		return ""
+	}
+	if aud := strings.TrimSpace(cfg.AssertionAud); aud != "" {
+		return strings.TrimRight(aud, "/")
+	}
+	if token := strings.TrimSpace(cfg.TokenURL); token != "" {
+		if base, ok := strings.CutSuffix(token, "/token"); ok && base != "" {
+			return base
+		}
+	}
+	return strings.TrimRight(strings.TrimSpace(cfg.IssuerURL), "/")
 }
 
 func resolveJWKSURI(configured string) string {
@@ -110,15 +139,6 @@ func resolveJWKSURI(configured string) string {
 		return uri
 	}
 	return strings.TrimSpace(configured)
-}
-
-func logHTTPError(msg string, resp *http.Response) {
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Logger.Errorw(msg, "status", resp.StatusCode, "read_body_error", err)
-		return
-	}
-	log.Logger.Errorw(msg, "status", resp.StatusCode, "body", string(body))
 }
 
 func (p *singpassProxyImpl) GetAccessToken(ctx context.Context, code string) (string, error) {
@@ -132,6 +152,16 @@ func (p *singpassProxyImpl) GetAccessToken(ctx context.Context, code string) (st
 		return "", errors.New("singpass issuer url is not configured")
 	}
 
+	cfg := config.Config.SingpassConfig
+	log.Logger.Infow("singpass: exchanging auth code for access token",
+		"client_id", p.ClientID,
+		"assertion_aud", p.Issuer,
+		"issuer_url", cfg.IssuerURL,
+		"assertion_aud_config", cfg.AssertionAud,
+		"token_url", cfg.TokenURL,
+		"redirect_uri", cfg.RedirectURI,
+	)
+
 	clientAssertion, err := p.SigningKey.clientAssertion(p.ClientID, p.Issuer)
 	if err != nil {
 		log.Logger.Errorw("singpass: failed to create client assertion", "error", err)
@@ -141,13 +171,13 @@ func (p *singpassProxyImpl) GetAccessToken(ctx context.Context, code string) (st
 	form := url.Values{
 		"code":                  {code},
 		"grant_type":            {"authorization_code"},
-		"redirect_uri":          {config.Config.SingpassConfig.RedirectURI},
+		"redirect_uri":          {cfg.RedirectURI},
 		"client_id":             {p.ClientID},
 		"client_assertion_type": {clientAssertionType},
 		"client_assertion":      {clientAssertion},
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, config.Config.SingpassConfig.TokenURL, strings.NewReader(form.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, cfg.TokenURL, strings.NewReader(form.Encode()))
 	if err != nil {
 		log.Logger.Errorw("singpass: failed to create token request", "error", err)
 		return "", err
@@ -156,7 +186,11 @@ func (p *singpassProxyImpl) GetAccessToken(ctx context.Context, code string) (st
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
-		log.Logger.Errorw("singpass: failed to get access token", "error", err)
+		log.Logger.Errorw("singpass: failed to get access token",
+			"error", err,
+			"token_url", cfg.TokenURL,
+			"assertion_aud", p.Issuer,
+		)
 		return "", err
 	}
 	defer func() {
@@ -165,7 +199,28 @@ func (p *singpassProxyImpl) GetAccessToken(ctx context.Context, code string) (st
 		}
 	}()
 	if resp.StatusCode != http.StatusOK {
-		logHTTPError("singpass: failed to get access token", resp)
+		body, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			log.Logger.Errorw("singpass: failed to get access token",
+				"status", resp.StatusCode,
+				"read_body_error", readErr,
+				"token_url", cfg.TokenURL,
+				"assertion_aud", p.Issuer,
+				"issuer_url", cfg.IssuerURL,
+				"redirect_uri", cfg.RedirectURI,
+				"client_id", p.ClientID,
+			)
+		} else {
+			log.Logger.Errorw("singpass: failed to get access token",
+				"status", resp.StatusCode,
+				"body", string(body),
+				"token_url", cfg.TokenURL,
+				"assertion_aud", p.Issuer,
+				"issuer_url", cfg.IssuerURL,
+				"redirect_uri", cfg.RedirectURI,
+				"client_id", p.ClientID,
+			)
+		}
 		return "", errors.New("failed to get access token")
 	}
 

@@ -5,11 +5,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"net"
 	"os"
 	"strings"
 	"time"
 
+	commonauth "github.com/nusiss-capstone-project/identity-mservice/common/auth"
 	"github.com/nusiss-capstone-project/identity-mservice/server/repository/dao"
 )
 
@@ -43,7 +43,7 @@ func NewAuthenticator() *Authenticator {
 	}
 }
 
-func (a *Authenticator) Authenticate(ctx context.Context, token string) (*User, error) {
+func (a *Authenticator) Authenticate(ctx context.Context, token string) (*commonauth.User, error) {
 	claims, err := a.verifyToken(token)
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func (a *Authenticator) Authenticate(ctx context.Context, token string) (*User, 
 	if email == "" {
 		email = mapping.Email
 	}
-	return &User{
+	return &commonauth.User{
 		InternalUserID: mapping.InternalUserID,
 		ClerkUserID:    mapping.ClerkUserID,
 		Email:          email,
@@ -123,26 +123,4 @@ func decodeJWTPart(raw string, out any) error {
 		return err
 	}
 	return json.Unmarshal(b, out)
-}
-
-func devBypassEnabled() bool {
-	return os.Getenv("APP_ENV") == "local" && strings.EqualFold(os.Getenv("AUTH_DEV_BYPASS"), "true")
-}
-
-func devBypassAllowed(clientIP string) bool {
-	ip := net.ParseIP(strings.TrimSpace(clientIP))
-	return ip != nil && ip.IsLoopback()
-}
-
-func devBypassAllowedRemoteAddr(remoteAddr string) bool {
-	host, _, err := net.SplitHostPort(strings.TrimSpace(remoteAddr))
-	if err != nil {
-		host = remoteAddr
-	}
-	return devBypassAllowed(host)
-}
-
-func devBypassUser() *User {
-	// Localhost-only demo bypass. Never enable AUTH_DEV_BYPASS on network-accessible instances.
-	return &User{InternalUserID: 1, ClerkUserID: "dev_bypass", Email: "demo@example.com", Role: RoleAdmin}
 }

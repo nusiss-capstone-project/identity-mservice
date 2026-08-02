@@ -16,15 +16,17 @@ type Conf struct {
 	HttpConfig     *HttpConfig     `mapstructure:"http"`
 	SystemConfig   *SystemConfig   `mapstructure:"system"`
 	SingpassConfig *SingpassConfig `mapstructure:"singpass"`
+	KafkaConfig    *KafkaConfig    `mapstructure:"kafka"`
 }
 
 type SingpassConfig struct {
-	RedirectURI string `mapstructure:"redirect_uri"`
-	Scope       string `mapstructure:"scope"`
-	IssuerURL   string `mapstructure:"issuer_url"`
-	TokenURL    string `mapstructure:"token_url"`
-	UserInfoURL string `mapstructure:"user_info_url"`
-	JWKSURI     string `mapstructure:"jwks_uri"`
+	RedirectURI   string `mapstructure:"redirect_uri"`
+	Scope         string `mapstructure:"scope"`
+	IssuerURL     string `mapstructure:"issuer_url"`     // browser authorize base (public)
+	AssertionAud  string `mapstructure:"assertion_aud"`  // client_assertion aud; optional
+	TokenURL      string `mapstructure:"token_url"`
+	UserInfoURL   string `mapstructure:"user_info_url"`
+	JWKSURI       string `mapstructure:"jwks_uri"`
 }
 
 type HttpConfig struct {
@@ -45,7 +47,14 @@ type GrpcConfig struct {
 }
 
 type SystemConfig struct {
-	AllowedOrigins []string `mapstructure:"allowed_origins"`
+	AllowedOrigins     []string `mapstructure:"allowed_origins"`
+	PostKYCRedirectURI string   `mapstructure:"post_kyc_redirect_uri"`
+}
+
+type KafkaConfig struct {
+	Enabled  bool     `mapstructure:"enabled"`
+	Brokers  []string `mapstructure:"brokers"`
+	ClientID string   `mapstructure:"client_id"`
 }
 
 func Init() {
