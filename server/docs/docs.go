@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/identity-ms/v1/admin/current-role": {
+        "/identity-ms/v1/admin/current-user": {
             "get": {
                 "produces": [
                     "application/json"
@@ -23,16 +23,28 @@ const docTemplate = `{
                 "tags": [
                     "admin"
                 ],
-                "summary": "Get current role",
+                "summary": "Get current user",
                 "responses": {
                     "200": {
                         "description": "success",
                         "schema": {
-                            "$ref": "#/definitions/api.CurrentRoleHTTPResponse"
+                            "$ref": "#/definitions/api.CurrentUserHTTPResponse"
                         }
                     },
                     "401": {
                         "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/data.BaseResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "user not found",
+                        "schema": {
+                            "$ref": "#/definitions/data.BaseResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
                         "schema": {
                             "$ref": "#/definitions/data.BaseResponse"
                         }
@@ -208,16 +220,24 @@ const docTemplate = `{
                 }
             }
         },
-        "api.CurrentRoleData": {
+        "api.CurrentUserData": {
             "type": "object",
             "properties": {
                 "role": {
                     "type": "string",
                     "example": "admin"
+                },
+                "userId": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "username": {
+                    "type": "string",
+                    "example": "alice"
                 }
             }
         },
-        "api.CurrentRoleHTTPResponse": {
+        "api.CurrentUserHTTPResponse": {
             "type": "object",
             "properties": {
                 "code": {
@@ -225,7 +245,7 @@ const docTemplate = `{
                     "example": 0
                 },
                 "data": {
-                    "$ref": "#/definitions/api.CurrentRoleData"
+                    "$ref": "#/definitions/api.CurrentUserData"
                 },
                 "message": {
                     "type": "string",
