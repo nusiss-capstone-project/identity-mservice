@@ -50,6 +50,29 @@ func TestUserProfileService_GetProfile_propagatesError(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestUserProfileService_GetUser_returnsUser(t *testing.T) {
+	users := new(mocks.UserDao)
+	users.On("GetByID", mock.Anything, int64(7)).Return(&model.User{ID: 7, Name: "bob"}, nil)
+	svc := NewUserProfileService(users)
+
+	user, err := svc.GetUser(context.Background(), 7)
+
+	require.NoError(t, err)
+	require.Equal(t, int64(7), user.ID)
+	require.Equal(t, "bob", user.Name)
+}
+
+func TestUserProfileService_GetUser_notFound(t *testing.T) {
+	users := new(mocks.UserDao)
+	users.On("GetByID", mock.Anything, int64(1)).Return(nil, nil)
+	svc := NewUserProfileService(users)
+
+	user, err := svc.GetUser(context.Background(), 1)
+
+	require.NoError(t, err)
+	require.Nil(t, user)
+}
+
 func TestUserProfileService_GetProfile_masksEmailVariants(t *testing.T) {
 	createdAt := time.Date(2026, 5, 16, 10, 0, 0, 0, time.UTC)
 	for _, tc := range []struct {

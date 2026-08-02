@@ -5,19 +5,25 @@ definitions:
         example: Missing svix headers
         type: string
     type: object
-  api.CurrentRoleData:
+  api.CurrentUserData:
     properties:
       role:
         example: admin
         type: string
+      userId:
+        example: 1
+        type: integer
+      username:
+        example: alice
+        type: string
     type: object
-  api.CurrentRoleHTTPResponse:
+  api.CurrentUserHTTPResponse:
     properties:
       code:
         example: 0
         type: integer
       data:
-        $ref: '#/definitions/api.CurrentRoleData'
+        $ref: '#/definitions/api.CurrentUserData'
       message:
         example: success
         type: string
@@ -59,7 +65,7 @@ definitions:
 info:
   contact: {}
 paths:
-  /identity-ms/v1/admin/current-role:
+  /identity-ms/v1/admin/current-user:
     get:
       produces:
       - application/json
@@ -67,12 +73,20 @@ paths:
         "200":
           description: success
           schema:
-            $ref: '#/definitions/api.CurrentRoleHTTPResponse'
+            $ref: '#/definitions/api.CurrentUserHTTPResponse'
         "401":
           description: authentication required
           schema:
             $ref: '#/definitions/data.BaseResponse'
-      summary: Get current role
+        "404":
+          description: user not found
+          schema:
+            $ref: '#/definitions/data.BaseResponse'
+        "500":
+          description: internal error
+          schema:
+            $ref: '#/definitions/data.BaseResponse'
+      summary: Get current user
       tags:
       - admin
   /identity-ms/v1/clerk/callback:

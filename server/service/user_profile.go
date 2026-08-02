@@ -38,10 +38,9 @@ func GetUserProfileService() *UserProfileServiceImpl {
 }
 
 func (s *UserProfileServiceImpl) GetProfile(ctx context.Context, userID int64, email string) (*data.UserProfileVO, error) {
-	user, err := s.users.GetByID(ctx, userID)
+	user, err := s.GetUser(ctx, userID)
 	if err != nil {
-		log.Logger.Errorf("Failed to get user profile: %v", err)
-		return nil, fmt.Errorf("failed to get user profile: %w", err)
+		return nil, err
 	}
 	if user == nil {
 		return nil, nil
@@ -52,4 +51,14 @@ func (s *UserProfileServiceImpl) GetProfile(ctx context.Context, userID int64, e
 		KYCChecked:   user.KYCStatus == model.KYCStatusPassed,
 		RegisteredAt: user.CreatedAt.Format(time.RFC3339),
 	}, nil
+}
+
+// GetUser loads the user row by internal id. Returns nil, nil when not found.
+func (s *UserProfileServiceImpl) GetUser(ctx context.Context, userID int64) (*model.User, error) {
+	user, err := s.users.GetByID(ctx, userID)
+	if err != nil {
+		log.Logger.Errorf("Failed to get user: %v", err)
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+	return user, nil
 }
