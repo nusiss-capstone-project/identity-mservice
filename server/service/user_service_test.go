@@ -28,6 +28,12 @@ func (nopUserRegisteredProducer) PublishUserRegistered(context.Context, int64, t
 	return nil
 }
 
+type errUserRegisteredProducer struct{ err error }
+
+func (p errUserRegisteredProducer) PublishUserRegistered(context.Context, int64, time.Time) error {
+	return p.err
+}
+
 func clerkUserData() *data.ClerkCallbackData {
 	return &data.ClerkCallbackData{
 		ID: "user_abc",
@@ -161,6 +167,29 @@ func TestUserMappingService_CreateUser_propagatesMappingCreateError(t *testing.T
 	err := svc.CreateUser(context.Background(), clerkUserData())
 
 	require.Error(t, err)
+}
+
+func TestUserMappingService_CreateUser_propagatesRegisteredPublishError(t *testing.T) {
+	users := new(mocks.UserDao)
+	mappings := new(mocks.UserAuthMappingDao)
+	mappings.On("GetByClerkUserID", mock.Anything, "user_abc").Return(nil, nil)
+	mappings.On("GetByEmail", mock.Anything, "alice@example.com").Return(nil, nil)
+	users.On("CreateInTransaction", mock.Anything, mock.AnythingOfType("*model.User")).
+		Run(func(args mock.Arguments) {
+			u := args.Get(1).(*model.User)
+			u.ID = 100
+		}).
+		Return(nil)
+	mappings.On("CreateInTransaction", mock.Anything, mock.AnythingOfType("*model.UserAuthMapping")).
+		Return(nil)
+
+	publishErr := errors.New("kafka down")
+	svc := newUserMappingService(mappings, users, fakeTxBeginner{}, errUserRegisteredProducer{err: publishErr})
+	err := svc.CreateUser(context.Background(), clerkUserData())
+
+	require.ErrorIs(t, err, publishErr)
+	users.AssertExpectations(t)
+	mappings.AssertExpectations(t)
 }
 
 var _ repository.TxBeginner = fakeTxBeginner{}

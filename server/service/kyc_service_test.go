@@ -40,6 +40,12 @@ func (nopUserKYCCompleteProducer) PublishUserKYCComplete(context.Context, int64,
 	return nil
 }
 
+type errUserKYCCompleteProducer struct{ err error }
+
+func (p errUserKYCCompleteProducer) PublishUserKYCComplete(context.Context, int64, string, time.Time) error {
+	return p.err
+}
+
 func TestKYCService_StartSingpassLogin_savesStateAndReturnsURL(t *testing.T) {
 	prev := config.Config.SingpassConfig
 	config.Config.SingpassConfig = &config.SingpassConfig{
@@ -84,6 +90,24 @@ func TestKYCService_SingpassCallback_passesWhenNamePresent(t *testing.T) {
 	err := svc.SingpassCallback(context.Background(), "auth-code", "st")
 
 	require.NoError(t, err)
+	users.AssertExpectations(t)
+}
+
+func TestKYCService_SingpassCallback_propagatesKYCCompletePublishError(t *testing.T) {
+	users := new(mocks.UserDao)
+	store := newMemoryKYCStateStore(time.Minute)
+	sp := &fakeSingpassProxy{
+		token: "access-token",
+		info:  &proxy.UserInfo{Name: "USER S8979373D", Email: "alice@example.com"},
+	}
+	seedState(store, "st", 42, "alice@example.com")
+	users.On("UpdateKYCStatus", mock.Anything, int64(42), model.KYCStatusPassed).Return(nil)
+
+	publishErr := errors.New("kafka down")
+	svc := newKYCService(sp, users, store, errUserKYCCompleteProducer{err: publishErr})
+	err := svc.SingpassCallback(context.Background(), "auth-code", "st")
+
+	require.ErrorIs(t, err, publishErr)
 	users.AssertExpectations(t)
 }
 
