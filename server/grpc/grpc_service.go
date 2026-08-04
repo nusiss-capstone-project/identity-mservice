@@ -9,14 +9,19 @@ import (
 	"github.com/nusiss-capstone-project/identity-mservice/server/service"
 )
 
-type IdentityService struct {
-	identitypb.UnimplementedIdentityServiceServer
-	profiles service.IdentityProfileService
+// userProfileLookup is the gRPC dependency for GetUserProfile.
+type userProfileLookup interface {
+	GetUserProfile(ctx context.Context, userID int64) (*service.UserProfileAggregate, error)
 }
 
-func NewIdentityService(profiles service.IdentityProfileService) *IdentityService {
+type IdentityService struct {
+	identitypb.UnimplementedIdentityServiceServer
+	profiles userProfileLookup
+}
+
+func NewIdentityService(profiles userProfileLookup) *IdentityService {
 	if profiles == nil {
-		profiles = service.GetIdentityProfileService()
+		profiles = service.GetUserProfileService()
 	}
 	return &IdentityService{profiles: profiles}
 }
