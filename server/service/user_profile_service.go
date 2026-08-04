@@ -166,11 +166,8 @@ func (s *UserProfileServiceImpl) UpdateProfile(ctx context.Context, userID int64
 
 func buildProfileUpdate(user *model.User, req *data.UpdateUserProfileRequest) (*model.User, error) {
 	update := &model.User{}
-	hasUpdate := false
+	hasUpdate := applyUsernameUpdate(update, req.Username)
 
-	if applyUsernameUpdate(update, req.Username) {
-		hasUpdate = true
-	}
 	applied, err := applyLanguageUpdate(update, req.Language)
 	if err != nil {
 		return nil, err
