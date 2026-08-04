@@ -51,6 +51,7 @@ func NewRouter() *gin.Engine {
 	web.Use(commonauth.RequireUser())
 	{
 		web.GET("/user-profile", api.UserGetProfile)
+		web.PUT("/user-profile", api.UserUpdateProfile)
 		web.GET("/kyc/singpass/login", api.SingpassLogin)
 	}
 

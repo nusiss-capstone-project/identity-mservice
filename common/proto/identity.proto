@@ -9,7 +9,7 @@ service IdentityService {
   rpc GetUserProfile (GetUserProfileRequest) returns (GetUserProfileResponse);
 }
 
-message HelloRequest {
+message HelloRequest { 
   string name = 1;
 }
 

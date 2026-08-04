@@ -16,6 +16,7 @@ type UserDao interface {
 	GetByID(ctx context.Context, id int64) (*model.User, error)
 	CreateInTransaction(trx *gorm.DB, user *model.User) error
 	UpdateKYCStatus(ctx context.Context, id int64, status string) error
+	UpdateProfile(ctx context.Context, id int64, user *model.User) error
 }
 
 type UserDaoImpl struct {
@@ -68,4 +69,19 @@ func (dao *UserDaoImpl) UpdateKYCStatus(ctx context.Context, id int64, status st
 	ret := dao.db.WithContext(ctx).Model(&model.User{}).Where("id = ?", id).Update("kyc_status", status)
 	log.Logger.Infof("KYC status updated: %v", ret)
 	return ret.Error
+}
+
+func (dao *UserDaoImpl) UpdateProfile(ctx context.Context, id int64, user *model.User) error {
+	if dao.db == nil {
+		return ErrDatabaseDisabled
+	}
+	if user == nil {
+		return nil
+	}
+	ret := dao.db.WithContext(ctx).Model(&model.User{}).Where("id = ?", id).Updates(user)
+	if ret.Error != nil {
+		log.Logger.Errorf("Failed to update user profile: %v", ret.Error)
+		return ret.Error
+	}
+	return nil
 }

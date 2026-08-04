@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -13,8 +15,15 @@ import (
 	"github.com/nusiss-capstone-project/identity-mservice/server/util"
 )
 
+var (
+	ErrMarketAlreadySet = errors.New("market already set")
+	ErrInvalidMarket    = errors.New("invalid market")
+	ErrInvalidLanguage  = errors.New("invalid language")
+)
+
 type UserProfileService interface {
 	GetProfile(ctx context.Context, userID int64, email string) (*data.UserProfileVO, error)
+	UpdateProfile(ctx context.Context, userID int64, req *data.UpdateUserProfileRequest) error
 }
 
 type UserProfileServiceImpl struct {
@@ -48,6 +57,8 @@ func (s *UserProfileServiceImpl) GetProfile(ctx context.Context, userID int64, e
 	return &data.UserProfileVO{
 		Username:     user.Name,
 		Email:        util.MaskEmail(email),
+		Language:     user.Language,
+		Market:       user.Market,
 		KYCChecked:   user.KYCStatus == model.KYCStatusPassed,
 		RegisteredAt: user.CreatedAt.Format(time.RFC3339),
 	}, nil
@@ -61,4 +72,55 @@ func (s *UserProfileServiceImpl) GetUser(ctx context.Context, userID int64) (*mo
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
 	return user, nil
+}
+
+// UpdateProfile partially updates username/language/market.
+// Market may only be initialized once; repeating the same value is a no-op,
+// but a different value returns ErrMarketAlreadySet.
+func (s *UserProfileServiceImpl) UpdateProfile(ctx context.Context, userID int64, req *data.UpdateUserProfileRequest) error {
+	if req == nil {
+		return ErrInvalidArgument
+	}
+	user, err := s.GetUser(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if user == nil {
+		return ErrUserNotFound
+	}
+
+	update := &model.User{}
+	hasUpdate := false
+	if username := strings.TrimSpace(req.Username); username != "" {
+		update.Name = username
+		hasUpdate = true
+	}
+	if language := strings.TrimSpace(req.Language); language != "" {
+		if !data.IsValidLanguage(language) {
+			return ErrInvalidLanguage
+		}
+		update.Language = language
+		hasUpdate = true
+	}
+	if market := strings.TrimSpace(req.Market); market != "" {
+		if !data.IsValidMarket(market) {
+			return ErrInvalidMarket
+		}
+		existing := strings.TrimSpace(user.Market)
+		if existing != "" && existing != market {
+			return ErrMarketAlreadySet
+		}
+		if existing == "" {
+			update.Market = market
+			hasUpdate = true
+		}
+	}
+	if !hasUpdate {
+		return nil
+	}
+	if err := s.users.UpdateProfile(ctx, userID, update); err != nil {
+		return err
+	}
+	InvalidateUserProfileCache(ctx, userID)
+	return nil
 }

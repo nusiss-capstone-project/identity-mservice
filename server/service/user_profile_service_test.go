@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nusiss-capstone-project/identity-mservice/server/http/data"
 	"github.com/nusiss-capstone-project/identity-mservice/server/repository/dao/mocks"
 	"github.com/nusiss-capstone-project/identity-mservice/server/repository/model"
 	"github.com/stretchr/testify/mock"
@@ -16,7 +17,8 @@ func TestUserProfileService_GetProfile_masksEmailAndMapsKYC(t *testing.T) {
 	createdAt := time.Date(2026, 5, 16, 10, 0, 0, 0, time.UTC)
 	users := new(mocks.UserDao)
 	users.On("GetByID", mock.Anything, int64(100)).Return(&model.User{
-		ID: 100, Name: "alice", KYCStatus: model.KYCStatusPassed, CreatedAt: createdAt,
+		ID: 100, Name: "alice", Language: "en", Market: "SG",
+		KYCStatus: model.KYCStatusPassed, CreatedAt: createdAt,
 	}, nil)
 	svc := NewUserProfileService(users)
 
@@ -25,6 +27,8 @@ func TestUserProfileService_GetProfile_masksEmailAndMapsKYC(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "alice", profile.Username)
 	require.Equal(t, "a***e@example.com", profile.Email)
+	require.Equal(t, "en", profile.Language)
+	require.Equal(t, "SG", profile.Market)
 	require.True(t, profile.KYCChecked)
 	require.Equal(t, createdAt.Format(time.RFC3339), profile.RegisteredAt)
 }
@@ -71,6 +75,80 @@ func TestUserProfileService_GetUser_notFound(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Nil(t, user)
+}
+
+func TestUserProfileService_UpdateProfile_updatesLanguageAndUsername(t *testing.T) {
+	users := new(mocks.UserDao)
+	users.On("GetByID", mock.Anything, int64(1)).Return(&model.User{ID: 1, Name: "old", Market: "SG"}, nil)
+	users.On("UpdateProfile", mock.Anything, int64(1), &model.User{
+		Name:     "alice",
+		Language: "zh-CN",
+	}).Return(nil)
+	svc := NewUserProfileService(users)
+
+	err := svc.UpdateProfile(context.Background(), 1, &data.UpdateUserProfileRequest{
+		Username: "alice",
+		Language: "zh-CN",
+	})
+
+	require.NoError(t, err)
+	users.AssertExpectations(t)
+}
+
+func TestUserProfileService_UpdateProfile_setsMarketOnce(t *testing.T) {
+	users := new(mocks.UserDao)
+	users.On("GetByID", mock.Anything, int64(1)).Return(&model.User{ID: 1, Market: ""}, nil)
+	users.On("UpdateProfile", mock.Anything, int64(1), &model.User{Market: "SG"}).Return(nil)
+	svc := NewUserProfileService(users)
+
+	err := svc.UpdateProfile(context.Background(), 1, &data.UpdateUserProfileRequest{Market: "SG"})
+	require.NoError(t, err)
+}
+
+func TestUserProfileService_UpdateProfile_rejectsMarketWhenAlreadySet(t *testing.T) {
+	users := new(mocks.UserDao)
+	users.On("GetByID", mock.Anything, int64(1)).Return(&model.User{ID: 1, Market: "SG"}, nil)
+	svc := NewUserProfileService(users)
+
+	err := svc.UpdateProfile(context.Background(), 1, &data.UpdateUserProfileRequest{Market: "HK"})
+	require.ErrorIs(t, err, ErrMarketAlreadySet)
+	users.AssertNotCalled(t, "UpdateProfile", mock.Anything, mock.Anything, mock.Anything)
+}
+
+func TestUserProfileService_UpdateProfile_sameMarketAllowsOtherFields(t *testing.T) {
+	users := new(mocks.UserDao)
+	users.On("GetByID", mock.Anything, int64(1)).Return(&model.User{ID: 1, Name: "old", Market: "SG"}, nil)
+	users.On("UpdateProfile", mock.Anything, int64(1), &model.User{
+		Name:     "alice",
+		Language: "zh-CN",
+	}).Return(nil)
+	svc := NewUserProfileService(users)
+
+	err := svc.UpdateProfile(context.Background(), 1, &data.UpdateUserProfileRequest{
+		Username: "alice",
+		Language: "zh-CN",
+		Market:   "SG",
+	})
+	require.NoError(t, err)
+	users.AssertExpectations(t)
+}
+
+func TestUserProfileService_UpdateProfile_rejectsInvalidLanguage(t *testing.T) {
+	users := new(mocks.UserDao)
+	users.On("GetByID", mock.Anything, int64(1)).Return(&model.User{ID: 1}, nil)
+	svc := NewUserProfileService(users)
+
+	err := svc.UpdateProfile(context.Background(), 1, &data.UpdateUserProfileRequest{Language: "xx"})
+	require.ErrorIs(t, err, ErrInvalidLanguage)
+}
+
+func TestUserProfileService_UpdateProfile_rejectsInvalidMarket(t *testing.T) {
+	users := new(mocks.UserDao)
+	users.On("GetByID", mock.Anything, int64(1)).Return(&model.User{ID: 1}, nil)
+	svc := NewUserProfileService(users)
+
+	err := svc.UpdateProfile(context.Background(), 1, &data.UpdateUserProfileRequest{Market: "XX"})
+	require.ErrorIs(t, err, ErrInvalidMarket)
 }
 
 func TestUserProfileService_GetProfile_masksEmailVariants(t *testing.T) {

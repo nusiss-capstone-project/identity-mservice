@@ -36,6 +36,12 @@ definitions:
       kycChecked:
         example: true
         type: boolean
+      language:
+        example: en
+        type: string
+      market:
+        example: SG
+        type: string
       registeredAt:
         example: "2026-05-16T10:00:00Z"
         type: string
@@ -60,6 +66,15 @@ definitions:
         type: integer
       data: {}
       err_msg:
+        type: string
+    type: object
+  data.UpdateUserProfileRequest:
+    properties:
+      language:
+        type: string
+      market:
+        type: string
+      username:
         type: string
     type: object
 info:
@@ -194,6 +209,42 @@ paths:
           schema:
             $ref: '#/definitions/data.BaseResponse'
       summary: Get user profile (user)
+      tags:
+      - user-profile
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: profile fields to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/data.UpdateUserProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/data.BaseResponse'
+        "400":
+          description: invalid input or market already set
+          schema:
+            $ref: '#/definitions/data.BaseResponse'
+        "401":
+          description: authentication required
+          schema:
+            $ref: '#/definitions/data.BaseResponse'
+        "404":
+          description: user not found
+          schema:
+            $ref: '#/definitions/data.BaseResponse'
+        "500":
+          description: internal error
+          schema:
+            $ref: '#/definitions/data.BaseResponse'
+      summary: Update user profile (user)
       tags:
       - user-profile
 swagger: "2.0"
