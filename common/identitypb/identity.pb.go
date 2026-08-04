@@ -21,6 +21,61 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type ErrorCode int32
+
+const (
+	ErrorCode_ERROR_CODE_UNSPECIFIED      ErrorCode = 0
+	ErrorCode_ERROR_CODE_OK               ErrorCode = 1
+	ErrorCode_ERROR_CODE_USER_NOT_FOUND   ErrorCode = 2
+	ErrorCode_ERROR_CODE_INVALID_ARGUMENT ErrorCode = 3
+	ErrorCode_ERROR_CODE_INTERNAL         ErrorCode = 4
+)
+
+// Enum value maps for ErrorCode.
+var (
+	ErrorCode_name = map[int32]string{
+		0: "ERROR_CODE_UNSPECIFIED",
+		1: "ERROR_CODE_OK",
+		2: "ERROR_CODE_USER_NOT_FOUND",
+		3: "ERROR_CODE_INVALID_ARGUMENT",
+		4: "ERROR_CODE_INTERNAL",
+	}
+	ErrorCode_value = map[string]int32{
+		"ERROR_CODE_UNSPECIFIED":      0,
+		"ERROR_CODE_OK":               1,
+		"ERROR_CODE_USER_NOT_FOUND":   2,
+		"ERROR_CODE_INVALID_ARGUMENT": 3,
+		"ERROR_CODE_INTERNAL":         4,
+	}
+)
+
+func (x ErrorCode) Enum() *ErrorCode {
+	p := new(ErrorCode)
+	*p = x
+	return p
+}
+
+func (x ErrorCode) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ErrorCode) Descriptor() protoreflect.EnumDescriptor {
+	return file_proto_identity_proto_enumTypes[0].Descriptor()
+}
+
+func (ErrorCode) Type() protoreflect.EnumType {
+	return &file_proto_identity_proto_enumTypes[0]
+}
+
+func (x ErrorCode) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ErrorCode.Descriptor instead.
+func (ErrorCode) EnumDescriptor() ([]byte, []int) {
+	return file_proto_identity_proto_rawDescGZIP(), []int{0}
+}
+
 type HelloRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -109,6 +164,194 @@ func (x *HelloResponse) GetMessage() string {
 	return ""
 }
 
+type BaseResponseInfo struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Code          ErrorCode              `protobuf:"varint,1,opt,name=code,proto3,enum=identitypb.ErrorCode" json:"code,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BaseResponseInfo) Reset() {
+	*x = BaseResponseInfo{}
+	mi := &file_proto_identity_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BaseResponseInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BaseResponseInfo) ProtoMessage() {}
+
+func (x *BaseResponseInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_identity_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BaseResponseInfo.ProtoReflect.Descriptor instead.
+func (*BaseResponseInfo) Descriptor() ([]byte, []int) {
+	return file_proto_identity_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *BaseResponseInfo) GetCode() ErrorCode {
+	if x != nil {
+		return x.Code
+	}
+	return ErrorCode_ERROR_CODE_UNSPECIFIED
+}
+
+func (x *BaseResponseInfo) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+type GetUserProfileRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=userId,proto3" json:"userId,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserProfileRequest) Reset() {
+	*x = GetUserProfileRequest{}
+	mi := &file_proto_identity_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserProfileRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserProfileRequest) ProtoMessage() {}
+
+func (x *GetUserProfileRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_identity_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserProfileRequest.ProtoReflect.Descriptor instead.
+func (*GetUserProfileRequest) Descriptor() ([]byte, []int) {
+	return file_proto_identity_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *GetUserProfileRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+type GetUserProfileResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=userId,proto3" json:"userId,omitempty"`
+	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
+	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Market        string                 `protobuf:"bytes,4,opt,name=market,proto3" json:"market,omitempty"`
+	KycStatus     string                 `protobuf:"bytes,5,opt,name=kycStatus,proto3" json:"kycStatus,omitempty"`
+	RegisteredAt  int64                  `protobuf:"varint,6,opt,name=registeredAt,proto3" json:"registeredAt,omitempty"`
+	BaseInfo      *BaseResponseInfo      `protobuf:"bytes,255,opt,name=baseInfo,proto3" json:"baseInfo,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserProfileResponse) Reset() {
+	*x = GetUserProfileResponse{}
+	mi := &file_proto_identity_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserProfileResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserProfileResponse) ProtoMessage() {}
+
+func (x *GetUserProfileResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_identity_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserProfileResponse.ProtoReflect.Descriptor instead.
+func (*GetUserProfileResponse) Descriptor() ([]byte, []int) {
+	return file_proto_identity_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *GetUserProfileResponse) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *GetUserProfileResponse) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *GetUserProfileResponse) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *GetUserProfileResponse) GetMarket() string {
+	if x != nil {
+		return x.Market
+	}
+	return ""
+}
+
+func (x *GetUserProfileResponse) GetKycStatus() string {
+	if x != nil {
+		return x.KycStatus
+	}
+	return ""
+}
+
+func (x *GetUserProfileResponse) GetRegisteredAt() int64 {
+	if x != nil {
+		return x.RegisteredAt
+	}
+	return 0
+}
+
+func (x *GetUserProfileResponse) GetBaseInfo() *BaseResponseInfo {
+	if x != nil {
+		return x.BaseInfo
+	}
+	return nil
+}
+
 var File_proto_identity_proto protoreflect.FileDescriptor
 
 const file_proto_identity_proto_rawDesc = "" +
@@ -118,9 +361,29 @@ const file_proto_identity_proto_rawDesc = "" +
 	"\fHelloRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\")\n" +
 	"\rHelloResponse\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage2R\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\"W\n" +
+	"\x10BaseResponseInfo\x12)\n" +
+	"\x04code\x18\x01 \x01(\x0e2\x15.identitypb.ErrorCodeR\x04code\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"/\n" +
+	"\x15GetUserProfileRequest\x12\x16\n" +
+	"\x06userId\x18\x01 \x01(\x03R\x06userId\"\xef\x01\n" +
+	"\x16GetUserProfileResponse\x12\x16\n" +
+	"\x06userId\x18\x01 \x01(\x03R\x06userId\x12\x14\n" +
+	"\x05email\x18\x02 \x01(\tR\x05email\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12\x16\n" +
+	"\x06market\x18\x04 \x01(\tR\x06market\x12\x1c\n" +
+	"\tkycStatus\x18\x05 \x01(\tR\tkycStatus\x12\"\n" +
+	"\fregisteredAt\x18\x06 \x01(\x03R\fregisteredAt\x129\n" +
+	"\bbaseInfo\x18\xff\x01 \x01(\v2\x1c.identitypb.BaseResponseInfoR\bbaseInfo*\x93\x01\n" +
+	"\tErrorCode\x12\x1a\n" +
+	"\x16ERROR_CODE_UNSPECIFIED\x10\x00\x12\x11\n" +
+	"\rERROR_CODE_OK\x10\x01\x12\x1d\n" +
+	"\x19ERROR_CODE_USER_NOT_FOUND\x10\x02\x12\x1f\n" +
+	"\x1bERROR_CODE_INVALID_ARGUMENT\x10\x03\x12\x17\n" +
+	"\x13ERROR_CODE_INTERNAL\x10\x042\xab\x01\n" +
 	"\x0fIdentityService\x12?\n" +
-	"\bSayHello\x12\x18.identitypb.HelloRequest\x1a\x19.identitypb.HelloResponseB\x18Z\x16/identitypb;identitypbb\x06proto3"
+	"\bSayHello\x12\x18.identitypb.HelloRequest\x1a\x19.identitypb.HelloResponse\x12W\n" +
+	"\x0eGetUserProfile\x12!.identitypb.GetUserProfileRequest\x1a\".identitypb.GetUserProfileResponseB\x18Z\x16/identitypb;identitypbb\x06proto3"
 
 var (
 	file_proto_identity_proto_rawDescOnce sync.Once
@@ -134,19 +397,28 @@ func file_proto_identity_proto_rawDescGZIP() []byte {
 	return file_proto_identity_proto_rawDescData
 }
 
-var file_proto_identity_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_proto_identity_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_proto_identity_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_proto_identity_proto_goTypes = []any{
-	(*HelloRequest)(nil),  // 0: identitypb.HelloRequest
-	(*HelloResponse)(nil), // 1: identitypb.HelloResponse
+	(ErrorCode)(0),                 // 0: identitypb.ErrorCode
+	(*HelloRequest)(nil),           // 1: identitypb.HelloRequest
+	(*HelloResponse)(nil),          // 2: identitypb.HelloResponse
+	(*BaseResponseInfo)(nil),       // 3: identitypb.BaseResponseInfo
+	(*GetUserProfileRequest)(nil),  // 4: identitypb.GetUserProfileRequest
+	(*GetUserProfileResponse)(nil), // 5: identitypb.GetUserProfileResponse
 }
 var file_proto_identity_proto_depIdxs = []int32{
-	0, // 0: identitypb.IdentityService.SayHello:input_type -> identitypb.HelloRequest
-	1, // 1: identitypb.IdentityService.SayHello:output_type -> identitypb.HelloResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0, // 0: identitypb.BaseResponseInfo.code:type_name -> identitypb.ErrorCode
+	3, // 1: identitypb.GetUserProfileResponse.baseInfo:type_name -> identitypb.BaseResponseInfo
+	1, // 2: identitypb.IdentityService.SayHello:input_type -> identitypb.HelloRequest
+	4, // 3: identitypb.IdentityService.GetUserProfile:input_type -> identitypb.GetUserProfileRequest
+	2, // 4: identitypb.IdentityService.SayHello:output_type -> identitypb.HelloResponse
+	5, // 5: identitypb.IdentityService.GetUserProfile:output_type -> identitypb.GetUserProfileResponse
+	4, // [4:6] is the sub-list for method output_type
+	2, // [2:4] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_proto_identity_proto_init() }
@@ -159,13 +431,14 @@ func file_proto_identity_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_identity_proto_rawDesc), len(file_proto_identity_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   2,
+			NumEnums:      1,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_proto_identity_proto_goTypes,
 		DependencyIndexes: file_proto_identity_proto_depIdxs,
+		EnumInfos:         file_proto_identity_proto_enumTypes,
 		MessageInfos:      file_proto_identity_proto_msgTypes,
 	}.Build()
 	File_proto_identity_proto = out.File

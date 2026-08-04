@@ -207,6 +207,61 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user-profile"
+                ],
+                "summary": "Update user profile (user)",
+                "parameters": [
+                    {
+                        "description": "profile fields to update",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/data.UpdateUserProfileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "$ref": "#/definitions/data.BaseResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input or market already set",
+                        "schema": {
+                            "$ref": "#/definitions/data.BaseResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/data.BaseResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "user not found",
+                        "schema": {
+                            "$ref": "#/definitions/data.BaseResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/data.BaseResponse"
+                        }
+                    }
+                }
             }
         }
     },
@@ -264,6 +319,14 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "language": {
+                    "type": "string",
+                    "example": "en"
+                },
+                "market": {
+                    "type": "string",
+                    "example": "SG"
+                },
                 "registeredAt": {
                     "type": "string",
                     "example": "2026-05-16T10:00:00Z"
@@ -298,6 +361,20 @@ const docTemplate = `{
                 },
                 "data": {},
                 "err_msg": {
+                    "type": "string"
+                }
+            }
+        },
+        "data.UpdateUserProfileRequest": {
+            "type": "object",
+            "properties": {
+                "language": {
+                    "type": "string"
+                },
+                "market": {
+                    "type": "string"
+                },
+                "username": {
                     "type": "string"
                 }
             }

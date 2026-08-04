@@ -65,6 +65,36 @@ func (_m *UserAuthMappingDao) GetByClerkUserID(ctx context.Context, clerkUserID 
 	return r0, r1
 }
 
+// GetByInternalUserID provides a mock function with given fields: ctx, internalUserID
+func (_m *UserAuthMappingDao) GetByInternalUserID(ctx context.Context, internalUserID int64) (*model.UserAuthMapping, error) {
+	ret := _m.Called(ctx, internalUserID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetByInternalUserID")
+	}
+
+	var r0 *model.UserAuthMapping
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, int64) (*model.UserAuthMapping, error)); ok {
+		return rf(ctx, internalUserID)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, int64) *model.UserAuthMapping); ok {
+		r0 = rf(ctx, internalUserID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.UserAuthMapping)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, int64) error); ok {
+		r1 = rf(ctx, internalUserID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetByEmail provides a mock function with given fields: ctx, email
 func (_m *UserAuthMappingDao) GetByEmail(ctx context.Context, email string) (*model.UserAuthMapping, error) {
 	ret := _m.Called(ctx, email)

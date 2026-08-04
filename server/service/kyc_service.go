@@ -92,6 +92,7 @@ func (k *kycServiceImpl) SingpassCallback(ctx context.Context, code, state strin
 	if err = k.userDao.UpdateKYCStatus(ctx, pending.InternalUserID, kycStatus); err != nil {
 		return err
 	}
+	InvalidateUserProfileCache(ctx, pending.InternalUserID)
 	if err = k.kycCompleteProd.PublishUserKYCComplete(ctx, pending.InternalUserID, kycStatus, kycUpdatedAt); err != nil {
 		log.WithContext(ctx).Errorf("publish user kyc complete event user=%d: %v", pending.InternalUserID, err)
 		return err

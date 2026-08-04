@@ -83,6 +83,24 @@ func (_m *UserDao) UpdateKYCStatus(ctx context.Context, id int64, status string)
 	return r0
 }
 
+// UpdateProfile provides a mock function with given fields: ctx, id, user
+func (_m *UserDao) UpdateProfile(ctx context.Context, id int64, user *model.User) error {
+	ret := _m.Called(ctx, id, user)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateProfile")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, int64, *model.User) error); ok {
+		r0 = rf(ctx, id, user)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // NewUserDao creates a new instance of UserDao. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewUserDao(t interface {

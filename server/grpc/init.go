@@ -30,7 +30,7 @@ func Init(exitSig chan os.Signal) {
 		grpcpkg.StatsHandler(otelgrpc.NewServerHandler()),
 	}
 	grpcServer := grpcpkg.NewServer(opts...)
-	identitypb.RegisterIdentityServiceServer(grpcServer, &IdentityService{})
+	identitypb.RegisterIdentityServiceServer(grpcServer, NewIdentityService(nil))
 
 	log.Logger.Infof("Server is running on %s", ipPort)
 	if err := grpcServer.Serve(listener); err != nil {
