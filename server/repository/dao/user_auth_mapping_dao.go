@@ -14,6 +14,7 @@ import (
 //go:generate env PATH=$HOME/go/bin:$PATH mockery --name UserAuthMappingDao --filename UserAuthMappingDao.go --output ./mocks --outpkg mocks
 type UserAuthMappingDao interface {
 	GetByClerkUserID(ctx context.Context, clerkUserID string) (*model.UserAuthMapping, error)
+	GetByInternalUserID(ctx context.Context, internalUserID int64) (*model.UserAuthMapping, error)
 	GetByEmail(ctx context.Context, email string) (*model.UserAuthMapping, error)
 	CreateInTransaction(trx *gorm.DB, userAuthMapping *model.UserAuthMapping) error
 }
@@ -69,6 +70,25 @@ func (dao *UserAuthMappingDaoImpl) GetByEmail(ctx context.Context, email string)
 			return nil, nil
 		}
 		log.Logger.Errorf("Failed to get user auth mapping: %v", ret.Error)
+		return nil, ret.Error
+	}
+	return &row, nil
+}
+
+func (dao *UserAuthMappingDaoImpl) GetByInternalUserID(ctx context.Context, internalUserID int64) (*model.UserAuthMapping, error) {
+	if dao.db == nil {
+		return nil, ErrDatabaseDisabled
+	}
+	if internalUserID <= 0 {
+		return nil, nil
+	}
+	var row model.UserAuthMapping
+	ret := dao.db.WithContext(ctx).Where("internal_user_id = ?", internalUserID).First(&row)
+	if ret.Error != nil {
+		if errors.Is(ret.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		log.Logger.Errorf("Failed to get user auth mapping by internal user id: %v", ret.Error)
 		return nil, ret.Error
 	}
 	return &row, nil

@@ -107,6 +107,7 @@ func (s *userServiceImpl) CreateUser(ctx context.Context, clerkCallbackData *dat
 	}); err != nil {
 		return err
 	}
+	InvalidateUserProfileCache(ctx, user.ID)
 
 	if err = s.registeredProducer.PublishUserRegistered(ctx, user.ID, user.CreatedAt); err != nil {
 		log.WithContext(ctx).Errorf("publish user registered event user=%d: %v", user.ID, err)

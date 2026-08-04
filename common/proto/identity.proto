@@ -6,6 +6,7 @@ option go_package = "/identitypb;identitypb";
 
 service IdentityService {
   rpc SayHello (HelloRequest) returns (HelloResponse);
+  rpc GetUserProfile (GetUserProfileRequest) returns (GetUserProfileResponse);
 }
 
 message HelloRequest {
@@ -14,4 +15,31 @@ message HelloRequest {
 
 message HelloResponse {
   string message = 1;
+}
+
+enum ErrorCode {
+  ERROR_CODE_UNSPECIFIED = 0;
+  ERROR_CODE_OK = 1;
+  ERROR_CODE_USER_NOT_FOUND = 2;
+  ERROR_CODE_INVALID_ARGUMENT = 3;
+  ERROR_CODE_INTERNAL = 4;
+}
+
+message BaseResponseInfo {
+  ErrorCode code = 1;
+  string message = 2;
+}
+
+message GetUserProfileRequest {
+  int64 userId = 1;
+}
+
+message GetUserProfileResponse {
+  int64 userId = 1;
+  string email = 2;
+  string name = 3;
+  string market = 4;
+  string kycStatus = 5;
+  int64 registeredAt = 6;
+  BaseResponseInfo baseInfo = 255;
 }
