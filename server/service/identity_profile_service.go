@@ -60,21 +60,26 @@ func (s *identityProfileServiceImpl) GetUserProfile(ctx context.Context, userID 
 		return nil, ErrInvalidArgument
 	}
 	if cached, ok := getUserProfileCache(ctx, userID); ok {
+		log.WithContext(ctx).Infof("get user profile from cache: %v", cached)
 		return cached, nil
 	}
 
 	user, err := s.users.GetByID(ctx, userID)
 	if err != nil {
+		log.WithContext(ctx).Infof("get user error: %v", err)
 		return nil, fmt.Errorf("get user: %w", err)
 	}
 	if user == nil {
+		log.WithContext(ctx).Infof("user not found: %v", userID)
 		return nil, ErrUserNotFound
 	}
 	mapping, err := s.mappings.GetByInternalUserID(ctx, userID)
 	if err != nil {
+		log.WithContext(ctx).Infof("get user auth mapping error: %v", err)
 		return nil, fmt.Errorf("get user auth mapping: %w", err)
 	}
 	if mapping == nil {
+		log.WithContext(ctx).Infof("user auth mapping not found: %v", userID)
 		return nil, ErrUserNotFound
 	}
 
@@ -87,6 +92,7 @@ func (s *identityProfileServiceImpl) GetUserProfile(ctx context.Context, userID 
 		RegisteredAt: user.CreatedAt,
 	}
 	setUserProfileCache(ctx, profile)
+	log.WithContext(ctx).Infof("set user profile to cache: %v", profile)
 	return profile, nil
 }
 
