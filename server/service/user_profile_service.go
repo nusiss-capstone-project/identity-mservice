@@ -150,33 +150,11 @@ func (s *UserProfileServiceImpl) UpdateProfile(ctx context.Context, userID int64
 		return ErrUserNotFound
 	}
 
-	update := &model.User{}
-	hasUpdate := false
-	if username := strings.TrimSpace(req.Username); username != "" {
-		update.Name = username
-		hasUpdate = true
+	update, err := buildProfileUpdate(user, req)
+	if err != nil {
+		return err
 	}
-	if language := strings.TrimSpace(req.Language); language != "" {
-		if !data.IsValidLanguage(language) {
-			return ErrInvalidLanguage
-		}
-		update.Language = language
-		hasUpdate = true
-	}
-	if market := strings.TrimSpace(req.Market); market != "" {
-		if !data.IsValidMarket(market) {
-			return ErrInvalidMarket
-		}
-		existing := strings.TrimSpace(user.Market)
-		if existing != "" && existing != market {
-			return ErrMarketAlreadySet
-		}
-		if existing == "" {
-			update.Market = market
-			hasUpdate = true
-		}
-	}
-	if !hasUpdate {
+	if update == nil {
 		return nil
 	}
 	if err := s.users.UpdateProfile(ctx, userID, update); err != nil {
@@ -184,6 +162,71 @@ func (s *UserProfileServiceImpl) UpdateProfile(ctx context.Context, userID int64
 	}
 	InvalidateUserProfileCache(ctx, userID)
 	return nil
+}
+
+func buildProfileUpdate(user *model.User, req *data.UpdateUserProfileRequest) (*model.User, error) {
+	update := &model.User{}
+	hasUpdate := false
+
+	if applyUsernameUpdate(update, req.Username) {
+		hasUpdate = true
+	}
+	applied, err := applyLanguageUpdate(update, req.Language)
+	if err != nil {
+		return nil, err
+	}
+	hasUpdate = hasUpdate || applied
+
+	applied, err = applyMarketUpdate(update, user.Market, req.Market)
+	if err != nil {
+		return nil, err
+	}
+	hasUpdate = hasUpdate || applied
+
+	if !hasUpdate {
+		return nil, nil
+	}
+	return update, nil
+}
+
+func applyUsernameUpdate(update *model.User, username string) bool {
+	username = strings.TrimSpace(username)
+	if username == "" {
+		return false
+	}
+	update.Name = username
+	return true
+}
+
+func applyLanguageUpdate(update *model.User, language string) (bool, error) {
+	language = strings.TrimSpace(language)
+	if language == "" {
+		return false, nil
+	}
+	if !data.IsValidLanguage(language) {
+		return false, ErrInvalidLanguage
+	}
+	update.Language = language
+	return true, nil
+}
+
+func applyMarketUpdate(update *model.User, existingMarket, market string) (bool, error) {
+	market = strings.TrimSpace(market)
+	if market == "" {
+		return false, nil
+	}
+	if !data.IsValidMarket(market) {
+		return false, ErrInvalidMarket
+	}
+	existing := strings.TrimSpace(existingMarket)
+	if existing != "" && existing != market {
+		return false, ErrMarketAlreadySet
+	}
+	if existing != "" {
+		return false, nil
+	}
+	update.Market = market
+	return true, nil
 }
 
 func userProfileCacheKey(userID int64) string {
