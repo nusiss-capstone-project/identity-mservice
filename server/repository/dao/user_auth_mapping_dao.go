@@ -39,7 +39,7 @@ func GetUserAuthMappingDao() *UserAuthMappingDaoImpl {
 
 func (dao *UserAuthMappingDaoImpl) GetByClerkUserID(ctx context.Context, clerkUserID string) (*model.UserAuthMapping, error) {
 	if cached, ok := dao.getMappingFromCache(ctx, clerkUserID); ok {
-		log.WithContext(ctx).Infof("User auth mapping found in cache: %v", cached)
+		log.WithContext(ctx).Infow("user auth mapping cache hit", "clerk_user_id", clerkUserID)
 		return cached, nil
 	}
 	if dao.db == nil {
@@ -51,11 +51,11 @@ func (dao *UserAuthMappingDaoImpl) GetByClerkUserID(ctx context.Context, clerkUs
 		if errors.Is(ret.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
-		log.Logger.Errorf("Failed to get user auth mapping: %v", ret.Error)
+		log.WithContext(ctx).Errorw("db read user auth mapping by clerk id failed",
+			"clerk_user_id", clerkUserID, "error", ret.Error)
 		return nil, ret.Error
 	}
 	dao.setMappingCache(ctx, &row)
-	log.WithContext(ctx).Infof("User auth mapping set in cache: %v", row)
 	return &row, nil
 }
 
@@ -69,7 +69,7 @@ func (dao *UserAuthMappingDaoImpl) GetByEmail(ctx context.Context, email string)
 		if errors.Is(ret.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
-		log.Logger.Errorf("Failed to get user auth mapping: %v", ret.Error)
+		log.WithContext(ctx).Errorw("db read user auth mapping by email failed", "error", ret.Error)
 		return nil, ret.Error
 	}
 	return &row, nil
@@ -88,7 +88,8 @@ func (dao *UserAuthMappingDaoImpl) GetByInternalUserID(ctx context.Context, inte
 		if errors.Is(ret.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
-		log.Logger.Errorf("Failed to get user auth mapping by internal user id: %v", ret.Error)
+		log.WithContext(ctx).Errorw("db read user auth mapping by internal user id failed",
+			"user_id", internalUserID, "error", ret.Error)
 		return nil, ret.Error
 	}
 	return &row, nil
@@ -98,14 +99,23 @@ func (dao *UserAuthMappingDaoImpl) CreateInTransaction(trx *gorm.DB, userAuthMap
 	if dao.db == nil {
 		return ErrDatabaseDisabled
 	}
-	ctx := context.Background()
+	ctx := statementContext(trx)
 	if userAuthMapping != nil {
 		dao.deleteMappingCache(ctx, userAuthMapping.ClerkUserID)
 	}
 	ret := trx.Create(userAuthMapping)
-	log.Logger.Infof("User auth mapping created: %v", ret)
+	if ret.Error != nil {
+		log.WithContext(ctx).Errorw("db write user auth mapping create failed", "error", ret.Error)
+		return ret.Error
+	}
+	fields := []any{"rows", ret.RowsAffected}
 	if userAuthMapping != nil {
+		fields = append(fields,
+			"user_id", userAuthMapping.InternalUserID,
+			"clerk_user_id", userAuthMapping.ClerkUserID,
+		)
 		dao.deleteMappingCache(ctx, userAuthMapping.ClerkUserID)
 	}
-	return ret.Error
+	log.WithContext(ctx).Infow("db write user auth mapping created", fields...)
+	return nil
 }
