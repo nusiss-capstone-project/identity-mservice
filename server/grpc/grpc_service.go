@@ -27,7 +27,7 @@ func NewIdentityService(profiles userProfileLookup) *IdentityService {
 }
 
 func (s *IdentityService) SayHello(ctx context.Context, in *identitypb.HelloRequest) (*identitypb.HelloResponse, error) {
-	log.Logger.Infof("Received: %v", in.GetName())
+	log.WithContext(ctx).Infow("grpc SayHello", "name", in.GetName())
 	return &identitypb.HelloResponse{Message: "Hello " + in.GetName()}, nil
 }
 
@@ -50,7 +50,10 @@ func (s *IdentityService) GetUserProfile(ctx context.Context, in *identitypb.Get
 				},
 			}, nil
 		default:
-			log.WithContext(ctx).Errorf("GetUserProfile failed userId=%d: %v", in.GetUserId(), err)
+			log.WithContext(ctx).Errorw("GetUserProfile failed",
+				"user_id", in.GetUserId(),
+				"error", err,
+			)
 			return &identitypb.GetUserProfileResponse{
 				BaseInfo: &identitypb.BaseResponseInfo{
 					Code:    identitypb.ErrorCode_ERROR_CODE_INTERNAL,

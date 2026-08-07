@@ -77,6 +77,10 @@ func (p *userKYCCompleteProducerImpl) PublishUserKYCComplete(
 	}
 
 	err = p.producer.Publish(ctx, p.topic, []byte(strconv.FormatInt(userID, 10)), payload)
-	log.WithContext(ctx).Infof("published user kyc complete event user=%d, kyc_status=%s, kyc_updated_at=%d, error=%v", userID, kycStatus, kycUpdatedAt.Unix(), err)
-	return err
+	if err != nil {
+		log.WithContext(ctx).Errorw("publish user kyc complete event failed",
+			"user_id", userID, "topic", p.topic, "kyc_status", kycStatus, "error", err)
+		return err
+	}
+	return nil
 }

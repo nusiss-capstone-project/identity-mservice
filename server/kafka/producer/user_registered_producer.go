@@ -75,6 +75,10 @@ func (p *userRegisteredProducerImpl) PublishUserRegistered(
 	}
 
 	err = p.producer.Publish(ctx, p.topic, []byte(strconv.FormatInt(userID, 10)), payload)
-	log.WithContext(ctx).Infof("published user registered event user=%d, register_time=%d, error=%v", userID, registerTime.Unix(), err)
-	return err
+	if err != nil {
+		log.WithContext(ctx).Errorw("publish user registered event failed",
+			"user_id", userID, "topic", p.topic, "error", err)
+		return err
+	}
+	return nil
 }

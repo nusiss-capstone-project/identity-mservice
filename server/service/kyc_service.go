@@ -77,10 +77,10 @@ func (k *kycServiceImpl) SingpassCallback(ctx context.Context, code, state strin
 	if err != nil {
 		return err
 	}
-	log.Logger.Infof("user info: %s", userInfo)
+	log.WithContext(ctx).Infow("singpass user info received", "user_id", pending.InternalUserID)
 
 	if pending.Email != "" && !emailsMatchForKYC(pending.Email, userInfo.Email) {
-		log.Logger.Warnf("singpass email mismatch for user %d", pending.InternalUserID)
+		log.WithContext(ctx).Warnw("singpass email mismatch", "user_id", pending.InternalUserID)
 		return ErrKYCEmailMismatch
 	}
 
@@ -94,7 +94,8 @@ func (k *kycServiceImpl) SingpassCallback(ctx context.Context, code, state strin
 	}
 	InvalidateUserProfileCache(ctx, pending.InternalUserID)
 	if err = k.kycCompleteProd.PublishUserKYCComplete(ctx, pending.InternalUserID, kycStatus, kycUpdatedAt); err != nil {
-		log.WithContext(ctx).Errorf("publish user kyc complete event user=%d: %v", pending.InternalUserID, err)
+		log.WithContext(ctx).Errorw("publish user kyc complete event failed",
+			"user_id", pending.InternalUserID, "error", err)
 		return err
 	}
 	return nil

@@ -25,41 +25,48 @@ func NewRouter() *gin.Engine {
 	r := gin.New()
 	r.Use(log.RecoveryMiddleware())
 	r.Use(otelgin.Middleware(data.ServiceName))
-	r.Use(log.HTTPObservabilityMiddleware())
+	r.Use(log.HTTPResponseIDMiddleware())
 	r.Use(corsMiddleware())
 
 	basicGroup := r.Group(serviceURIPrefix)
 	{
-		basicGroup.GET("/swagger/*any", gs.WrapHandler(
-			swaggerFiles.Handler,
-			gs.URL("/identity-ms/v1/swagger/doc.json"),
-		))
+		// High-frequency / non-business routes: no HTTP access log.
 		basicGroup.GET("/ping", func(c *gin.Context) {
 			c.JSON(200, gin.H{
 				"message": "pong",
 			})
 		})
+		basicGroup.GET("/swagger/*any", gs.WrapHandler(
+			swaggerFiles.Handler,
+			gs.URL("/identity-ms/v1/swagger/doc.json"),
+		))
 	}
-	basicGroup.POST("/clerk/callback", api.ClerkCallback)
-	basicGroup.GET("/kyc/singpass/callback", api.SingpassCallback)
+
+	// Business routes: enable request access logging.
+	apiGroup := basicGroup.Group("")
+	apiGroup.Use(log.HTTPObservabilityMiddleware())
+	{
+		apiGroup.POST("/clerk/callback", api.ClerkCallback)
+		apiGroup.GET("/kyc/singpass/callback", api.SingpassCallback)
+
+		web := apiGroup.Group("/web")
+		web.Use(commonauth.RequireUser())
+		{
+			web.GET("/user-profile", api.UserGetProfile)
+			web.PUT("/user-profile", api.UserUpdateProfile)
+			web.GET("/kyc/singpass/login", api.SingpassLogin)
+		}
+
+		admin := apiGroup.Group("/admin")
+		admin.Use(commonauth.RequireRole(nil)) // authenticate only; any role may query current-user
+		{
+			admin.GET("/current-user", api.AdminGetCurrentUser)
+		}
+	}
 
 	// Outside /identity-ms/v1 so Traefik ForwardAuth on that prefix cannot recurse.
 	// Traefik ForwardAuth reuses the original request method, so accept any method.
-	r.Any("/auth/forward", commonauth.RequireInternalNetwork(), api.AuthForward)
-
-	web := basicGroup.Group("/web")
-	web.Use(commonauth.RequireUser())
-	{
-		web.GET("/user-profile", api.UserGetProfile)
-		web.PUT("/user-profile", api.UserUpdateProfile)
-		web.GET("/kyc/singpass/login", api.SingpassLogin)
-	}
-
-	admin := basicGroup.Group("/admin")
-	admin.Use(commonauth.RequireRole(nil)) // authenticate only; any role may query current-user
-	{
-		admin.GET("/current-user", api.AdminGetCurrentUser)
-	}
+	r.Any("/auth/forward", log.HTTPObservabilityMiddleware(), commonauth.RequireInternalNetwork(), api.AuthForward)
 
 	return r
 }
@@ -72,10 +79,12 @@ func corsMiddleware() gin.HandlerFunc {
 		},
 		AllowHeaders: []string{
 			"Origin", "Content-Type", "Accept", "Authorization",
-			commonauth.HeaderInternalUserID, commonauth.HeaderUserRole, log.RequestIDHeader,
+			commonauth.HeaderInternalUserID, commonauth.HeaderUserRole,
+			log.RequestIDHeader, log.TraceIDHeader,
 		},
 		ExposeHeaders: []string{
-			"Content-Length", commonauth.HeaderInternalUserID, commonauth.HeaderUserRole, log.RequestIDHeader,
+			"Content-Length", commonauth.HeaderInternalUserID, commonauth.HeaderUserRole,
+			log.RequestIDHeader, log.TraceIDHeader,
 		},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,

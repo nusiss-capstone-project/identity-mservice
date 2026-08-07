@@ -93,7 +93,11 @@ func (s *userServiceImpl) CreateUser(ctx context.Context, clerkCallbackData *dat
 		KYCStatus: model.KYCStatusPending,
 		CreatedAt: time.Now(),
 	}
-	if err = s.tx.Transaction(func(tx *gorm.DB) error {
+	txBeginner := s.tx
+	if db, ok := s.tx.(*gorm.DB); ok {
+		txBeginner = db.WithContext(ctx)
+	}
+	if err = txBeginner.Transaction(func(tx *gorm.DB) error {
 		if err = s.userDao.CreateInTransaction(tx, user); err != nil {
 			return err
 		}

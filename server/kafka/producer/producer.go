@@ -24,7 +24,7 @@ type kafkaProducerImpl struct {
 type nopKafkaProducer struct{}
 
 func (nopKafkaProducer) Publish(ctx context.Context, topic string, key, value []byte) error {
-	log.WithContext(ctx).Infof("kafka producer is disabled, using no-op producer", "topic", topic)
+	log.WithContext(ctx).Infow("kafka publish skipped", "topic", topic, "reason", "producer disabled")
 	return nil
 }
 
@@ -97,10 +97,6 @@ func (p *kafkaProducerImpl) Publish(ctx context.Context, topic string, key, valu
 		Headers: kafkatrace.HeadersFromContext(ctx),
 	}
 	if produceErr = p.client.ProduceSync(ctx, record).FirstErr(); produceErr != nil {
-		log.WithContext(ctx).Errorw("kafka message publish failed",
-			"topic", topic,
-			"error", produceErr,
-		)
 		return produceErr
 	}
 	return nil
