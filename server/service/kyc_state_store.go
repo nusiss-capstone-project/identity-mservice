@@ -3,6 +3,8 @@ package service
 import (
 	"sync"
 	"time"
+
+	"github.com/nusiss-capstone-project/identity-mservice/server/log"
 )
 
 const defaultKYCStateTTL = 10 * time.Minute
@@ -41,6 +43,7 @@ func newMemoryKYCStateStore(ttl time.Duration) *memoryKYCStateStore {
 
 func (s *memoryKYCStateStore) Save(state string, pending KYCPending) {
 	if state == "" {
+		log.Logger.Warnw("kyc state save skipped: empty state")
 		return
 	}
 	s.mu.Lock()
@@ -50,6 +53,13 @@ func (s *memoryKYCStateStore) Save(state string, pending KYCPending) {
 	}
 	s.items[state] = pending
 	s.purgeExpiredLocked()
+	log.Logger.Infow("kyc state saved",
+		"user_id", pending.InternalUserID,
+		"state_len", len(state),
+		"state_prefix", trimStatePrefix(state),
+		"expires_at", pending.ExpiresAt.UTC().Format(time.RFC3339),
+		"store_size", len(s.items),
+	)
 }
 
 func (s *memoryKYCStateStore) Consume(state string) (KYCPending, bool) {
@@ -58,12 +68,29 @@ func (s *memoryKYCStateStore) Consume(state string) (KYCPending, bool) {
 	s.purgeExpiredLocked()
 	pending, ok := s.items[state]
 	if !ok {
+		log.Logger.Warnw("kyc state consume miss",
+			"state_len", len(state),
+			"state_prefix", trimStatePrefix(state),
+			"store_size", len(s.items),
+			"reason", "not_found_or_already_consumed",
+		)
 		return KYCPending{}, false
 	}
 	delete(s.items, state)
 	if s.now().After(pending.ExpiresAt) {
+		log.Logger.Warnw("kyc state consume expired",
+			"user_id", pending.InternalUserID,
+			"state_prefix", trimStatePrefix(state),
+			"expires_at", pending.ExpiresAt.UTC().Format(time.RFC3339),
+			"store_size", len(s.items),
+		)
 		return KYCPending{}, false
 	}
+	log.Logger.Infow("kyc state consume ok",
+		"user_id", pending.InternalUserID,
+		"state_prefix", trimStatePrefix(state),
+		"store_size", len(s.items),
+	)
 	return pending, true
 }
 
