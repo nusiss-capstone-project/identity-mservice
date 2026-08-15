@@ -68,11 +68,19 @@ func (s *memoryKYCStateStore) Consume(state string) (KYCPending, bool) {
 	s.purgeExpiredLocked()
 	pending, ok := s.items[state]
 	if !ok {
+		prefixes := make([]string, 0, len(s.items))
+		for k := range s.items {
+			prefixes = append(prefixes, trimStatePrefix(k))
+			if len(prefixes) >= 10 {
+				break
+			}
+		}
 		log.Logger.Warnw("kyc state consume miss",
 			"state_len", len(state),
 			"state_prefix", trimStatePrefix(state),
 			"store_size", len(s.items),
-			"reason", "not_found_or_already_consumed",
+			"known_state_prefixes", prefixes,
+			"reason", "not_found_or_already_consumed_or_other_instance",
 		)
 		return KYCPending{}, false
 	}
@@ -83,6 +91,7 @@ func (s *memoryKYCStateStore) Consume(state string) (KYCPending, bool) {
 			"state_prefix", trimStatePrefix(state),
 			"expires_at", pending.ExpiresAt.UTC().Format(time.RFC3339),
 			"store_size", len(s.items),
+			"reason", "expired",
 		)
 		return KYCPending{}, false
 	}
