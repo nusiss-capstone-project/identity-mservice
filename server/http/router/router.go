@@ -45,9 +45,6 @@ func NewRouter() *gin.Engine {
 
 	// Business routes: enable request access logging.
 	apiGroup := basicGroup.Group("")
-	apiGroup.Use(commonauth.AuditMiddleware(func(ctx context.Context) commonauth.AuditLogger {
-		return log.WithContext(ctx)
-	}))
 	apiGroup.Use(log.HTTPObservabilityMiddleware())
 	{
 		apiGroup.POST("/clerk/callback", api.ClerkCallback)
@@ -62,6 +59,9 @@ func NewRouter() *gin.Engine {
 		}
 
 		admin := apiGroup.Group("/admin")
+		admin.Use(commonauth.AuditMiddleware(func(ctx context.Context) commonauth.AuditLogger {
+			return log.WithContext(ctx)
+		}))
 		admin.Use(commonauth.RequireRole(nil)) // authenticate only; any role may query current-user
 		{
 			admin.GET("/current-user", api.AdminGetCurrentUser)

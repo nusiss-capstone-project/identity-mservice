@@ -66,7 +66,6 @@ func SingpassCallback(c *gin.Context) {
 		"state_prefix", trimPrefix(state, 8),
 		"idp_error", idpError,
 		"idp_error_description", idpErrorDesc,
-		"raw_query", c.Request.URL.RawQuery,
 		"client_ip", c.ClientIP(),
 		"user_agent", c.Request.UserAgent(),
 		"referer", c.Request.Referer(),
@@ -93,7 +92,6 @@ func SingpassCallback(c *gin.Context) {
 			"http_status", http.StatusBadRequest,
 			"has_state", state != "",
 			"state_prefix", trimPrefix(state, 8),
-			"raw_query", c.Request.URL.RawQuery,
 		)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid code"})
 		return
@@ -103,7 +101,6 @@ func SingpassCallback(c *gin.Context) {
 			"reason", "missing_state",
 			"http_status", http.StatusBadRequest,
 			"has_code", code != "",
-			"raw_query", c.Request.URL.RawQuery,
 		)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid state"})
 		return
