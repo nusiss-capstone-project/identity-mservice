@@ -153,18 +153,20 @@ func (p *singpassProxyImpl) GetAccessToken(ctx context.Context, code string) (st
 	}
 
 	cfg := config.Config.SingpassConfig
-	log.Logger.Infow("singpass: exchanging auth code for access token",
+	log.WithContext(ctx).Infow("singpass: exchanging auth code for access token",
 		"client_id", p.ClientID,
 		"assertion_aud", p.Issuer,
 		"issuer_url", cfg.IssuerURL,
 		"assertion_aud_config", cfg.AssertionAud,
 		"token_url", cfg.TokenURL,
 		"redirect_uri", cfg.RedirectURI,
+		"code_len", len(code),
+		"ctx_err", ctx.Err(),
 	)
 
 	clientAssertion, err := p.SigningKey.clientAssertion(p.ClientID, p.Issuer)
 	if err != nil {
-		log.Logger.Errorw("singpass: failed to create client assertion", "error", err)
+		log.WithContext(ctx).Errorw("singpass: failed to create client assertion", "error", err)
 		return "", err
 	}
 
@@ -179,15 +181,16 @@ func (p *singpassProxyImpl) GetAccessToken(ctx context.Context, code string) (st
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, cfg.TokenURL, strings.NewReader(form.Encode()))
 	if err != nil {
-		log.Logger.Errorw("singpass: failed to create token request", "error", err)
+		log.WithContext(ctx).Errorw("singpass: failed to create token request", "error", err)
 		return "", err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
-		log.Logger.Errorw("singpass: failed to get access token",
+		log.WithContext(ctx).Errorw("singpass: failed to get access token",
 			"error", err,
+			"ctx_err", ctx.Err(),
 			"token_url", cfg.TokenURL,
 			"assertion_aud", p.Issuer,
 		)
@@ -195,13 +198,13 @@ func (p *singpassProxyImpl) GetAccessToken(ctx context.Context, code string) (st
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			log.Logger.Errorw("singpass: failed to close access token response body", "error", err)
+			log.WithContext(ctx).Errorw("singpass: failed to close access token response body", "error", err)
 		}
 	}()
 	if resp.StatusCode != http.StatusOK {
 		body, readErr := io.ReadAll(resp.Body)
 		if readErr != nil {
-			log.Logger.Errorw("singpass: failed to get access token",
+			log.WithContext(ctx).Errorw("singpass: failed to get access token",
 				"status", resp.StatusCode,
 				"read_body_error", readErr,
 				"token_url", cfg.TokenURL,
@@ -211,7 +214,7 @@ func (p *singpassProxyImpl) GetAccessToken(ctx context.Context, code string) (st
 				"client_id", p.ClientID,
 			)
 		} else {
-			log.Logger.Errorw("singpass: failed to get access token",
+			log.WithContext(ctx).Errorw("singpass: failed to get access token",
 				"status", resp.StatusCode,
 				"body", string(body),
 				"token_url", cfg.TokenURL,
@@ -228,19 +231,26 @@ func (p *singpassProxyImpl) GetAccessToken(ctx context.Context, code string) (st
 		AccessToken string `json:"access_token"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResult); err != nil {
-		log.Logger.Errorw("singpass: failed to decode token response", "error", err)
+		log.WithContext(ctx).Errorw("singpass: failed to decode token response", "error", err)
 		return "", err
 	}
 	if tokenResult.AccessToken == "" {
+		log.WithContext(ctx).Errorw("singpass: token response missing access_token")
 		return "", fmt.Errorf("token response missing access_token")
 	}
+	log.WithContext(ctx).Infow("singpass: access token exchange ok", "token_len", len(tokenResult.AccessToken))
 	return tokenResult.AccessToken, nil
 }
 
 func (p *singpassProxyImpl) GetUserInfo(ctx context.Context, token string) (*UserInfo, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, config.Config.SingpassConfig.UserInfoURL, nil)
+	userInfoURL := config.Config.SingpassConfig.UserInfoURL
+	log.WithContext(ctx).Infow("singpass: fetching userinfo",
+		"user_info_url", userInfoURL,
+		"ctx_err", ctx.Err(),
+	)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, userInfoURL, nil)
 	if err != nil {
-		log.Logger.Errorw("singpass: failed to create user info request", "error", err)
+		log.WithContext(ctx).Errorw("singpass: failed to create user info request", "error", err)
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
@@ -248,29 +258,37 @@ func (p *singpassProxyImpl) GetUserInfo(ctx context.Context, token string) (*Use
 
 	resp, err := p.Client.Do(req)
 	if err != nil {
-		log.Logger.Errorw("singpass: failed to get user info", "error", err)
+		log.WithContext(ctx).Errorw("singpass: failed to get user info",
+			"error", err, "ctx_err", ctx.Err(), "user_info_url", userInfoURL)
 		return nil, err
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			log.Logger.Errorw("singpass: failed to close user info response body", "error", err)
+			log.WithContext(ctx).Errorw("singpass: failed to close user info response body", "error", err)
 		}
 	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Logger.Errorw("singpass: failed to read user info response", "error", err)
+		log.WithContext(ctx).Errorw("singpass: failed to read user info response",
+			"error", err, "ctx_err", ctx.Err())
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		log.Logger.Errorw("singpass: failed to get user info", "status", resp.StatusCode, "body", string(body))
+		log.WithContext(ctx).Errorw("singpass: failed to get user info",
+			"status", resp.StatusCode, "body", string(body), "user_info_url", userInfoURL)
 		return nil, errors.New("failed to get user info")
 	}
 
 	userInfo, err := p.parseUserInfoResponse(body)
 	if err != nil {
-		log.Logger.Errorw("singpass: failed to parse user info response", "error", err)
+		log.WithContext(ctx).Errorw("singpass: failed to parse user info response",
+			"error", err, "body_len", len(body))
 		return nil, err
 	}
+	log.WithContext(ctx).Infow("singpass: userinfo fetch ok",
+		"has_name", userInfo != nil && userInfo.Name != "",
+		"has_email", userInfo != nil && userInfo.Email != "",
+	)
 	return userInfo, nil
 }

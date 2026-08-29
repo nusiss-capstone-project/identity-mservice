@@ -1,6 +1,7 @@
 package router
 
 import (
+	"context"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -58,6 +59,9 @@ func NewRouter() *gin.Engine {
 		}
 
 		admin := apiGroup.Group("/admin")
+		admin.Use(commonauth.AuditMiddleware(func(ctx context.Context) commonauth.AuditLogger {
+			return log.WithContext(ctx)
+		}))
 		admin.Use(commonauth.RequireRole(nil)) // authenticate only; any role may query current-user
 		{
 			admin.GET("/current-user", api.AdminGetCurrentUser)
